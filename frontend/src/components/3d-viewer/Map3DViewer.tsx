@@ -74,7 +74,7 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
         ],
         terrain: {
           source: 'terrain-dem',
-          exaggeration: 2.8 // Steep 3D Mountain Terrain
+          exaggeration: 2.8
         }
       },
       center: [centerLon, centerLat],
@@ -88,7 +88,6 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
     map.current.on('load', () => {
       if (!map.current) return;
 
-      // Add GeoJSON 3D Line source
       map.current.addSource('route', {
         type: 'geojson',
         data: {
@@ -101,7 +100,6 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
         }
       });
 
-      // Add Glow Outer Line Layer
       map.current.addLayer({
         id: 'route-glow',
         type: 'line',
@@ -112,12 +110,11 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
         },
         paint: {
           'line-color': '#FF5722',
-          'line-width': 10,
+          'line-width': 8,
           'line-opacity': 0.45
         }
       });
 
-      // Add Main Route Line Layer
       map.current.addLayer({
         id: 'route-line',
         type: 'line',
@@ -128,16 +125,16 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
         },
         paint: {
           'line-color': '#FFA726',
-          'line-width': 4
+          'line-width': 3.5
         }
       });
 
       // Minimalist Bike Marker Element (Center Anchored)
       const el = document.createElement('div');
-      el.className = 'w-9 h-9 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 border-2 border-white shadow-xl shadow-orange-500/70 flex items-center justify-center pointer-events-none';
+      el.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 border-2 border-white shadow-xl shadow-orange-500/70 flex items-center justify-center pointer-events-none';
       el.style.transformOrigin = 'center center';
       el.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="18.5" cy="17.5" r="3.5"/>
           <circle cx="5.5" cy="17.5" r="3.5"/>
           <circle cx="15" cy="5" r="1"/>
@@ -163,7 +160,6 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
     const p = points[currentIndex];
     marker.current.setLngLat([p.longitude, p.latitude]);
 
-    // Calculate heading angle for bike marker orientation
     let headingDeg = 0;
     if (currentIndex < points.length - 1) {
       const nextP = points[currentIndex + 1];
@@ -176,7 +172,6 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
     }
 
     if (isPlaying && cameraMode === 'FOLLOW') {
-      // Smooth 3D Camera Follow without stuttering
       map.current.easeTo({
         center: [p.longitude, p.latitude],
         zoom: 15.2,
@@ -192,7 +187,7 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPlaying) {
-      const targetDurationMs = 35000; // 35 seconds max total duration
+      const targetDurationMs = 35000;
       const stepIntervalMs = 80;
       const totalSteps = targetDurationMs / stepIntervalMs;
       const stepSize = Math.max(1, Math.ceil(points.length / totalSteps));
@@ -215,29 +210,29 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
   const currentPt = points[currentIndex] || points[0];
 
   return (
-    <div className="relative w-full h-[560px] rounded-2xl overflow-hidden border border-dark-border bg-dark-bg shadow-2xl">
+    <div className="relative w-full h-[380px] sm:h-[560px] rounded-2xl overflow-hidden border border-dark-border bg-dark-bg shadow-2xl">
       {/* Map Canvas */}
       <div ref={mapContainer} className="w-full h-full" />
 
-      {/* Real-time Telemetry HUD (Top Floating Glass Card) */}
-      <div className="absolute top-4 left-4 right-4 md:left-6 md:right-auto glass-panel p-4 rounded-xl flex flex-wrap items-center justify-between gap-4 z-10">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
-            <Gauge className="w-5 h-5" />
+      {/* Real-time Telemetry HUD (Responsive Top Floating Glass Card) */}
+      <div className="absolute top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-auto glass-panel p-2.5 sm:p-4 rounded-xl flex flex-wrap items-center justify-between gap-2 sm:gap-4 z-10 text-xs sm:text-sm">
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+            <Gauge className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <p className="text-[11px] text-dark-muted font-medium">Velocidad</p>
-            <p className="text-base font-bold text-white">{formatSpeed(currentPt?.speed_kmh || 0)}</p>
+            <p className="text-[10px] sm:text-[11px] text-dark-muted font-medium">Velocidad</p>
+            <p className="text-xs sm:text-base font-bold text-white">{formatSpeed(currentPt?.speed_kmh || 0)}</p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-            <Mountain className="w-5 h-5" />
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+            <Mountain className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <p className="text-[11px] text-dark-muted font-medium">Pendiente / Altitud</p>
-            <p className="text-base font-bold text-white">
+            <p className="text-[10px] sm:text-[11px] text-dark-muted font-medium">Pendiente / Altitud</p>
+            <p className="text-xs sm:text-base font-bold text-white">
               <span className={currentPt?.gradient_pct >= 0 ? "text-emerald-400" : "text-cyan-400"}>
                 {currentPt?.gradient_pct > 0 ? `+${currentPt.gradient_pct}` : currentPt?.gradient_pct || 0}%
               </span>
@@ -247,37 +242,37 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center">
-            <HRIcon className="w-5 h-5" />
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+            <HRIcon className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <p className="text-[11px] text-dark-muted font-medium">Frecuencia Cardíaca</p>
-            <p className="text-base font-bold text-white">
+            <p className="text-[10px] sm:text-[11px] text-dark-muted font-medium">Frecuencia</p>
+            <p className="text-xs sm:text-base font-bold text-white">
               {currentPt?.heart_rate ? `${currentPt.heart_rate} bpm` : "-- bpm"}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
-            <Zap className="w-5 h-5" />
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+            <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <p className="text-[11px] text-dark-muted font-medium">Potencia Est.</p>
-            <p className="text-base font-bold text-white">{formatWatts(currentPt?.estimated_power_w || 0)}</p>
+            <p className="text-[10px] sm:text-[11px] text-dark-muted font-medium">Potencia</p>
+            <p className="text-xs sm:text-base font-bold text-white">{formatWatts(currentPt?.estimated_power_w || 0)}</p>
           </div>
         </div>
       </div>
 
-      {/* Playback Controls (Bottom Floating Bar) */}
-      <div className="absolute bottom-4 left-4 right-4 glass-panel p-3 rounded-xl flex items-center justify-between gap-4 z-10">
-        <div className="flex items-center space-x-2">
+      {/* Playback Controls (Responsive Bottom Floating Bar) */}
+      <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 glass-panel p-2.5 sm:p-3 rounded-xl flex items-center justify-between gap-2 sm:gap-4 z-10">
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            className="w-10 h-10 rounded-lg bg-dark-accent text-white flex items-center justify-center hover:bg-orange-600 transition shadow-md shadow-orange-500/30"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-dark-accent text-white flex items-center justify-center hover:bg-orange-600 transition shadow-md shadow-orange-500/30"
           >
-            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+            {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5" />}
           </button>
 
           <button
@@ -286,27 +281,27 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
               setIsPlaying(false);
               if (onPointSelect) onPointSelect(0);
             }}
-            className="w-10 h-10 rounded-lg bg-dark-border text-dark-muted hover:text-white flex items-center justify-center transition"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-dark-border text-dark-muted hover:text-white flex items-center justify-center transition"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
 
-          {/* Mode Selector Button renamed to "Seguimiento 3D" / "Vista Global" */}
           <button
             onClick={() => setCameraMode(prev => prev === 'FOLLOW' ? 'OVERVIEW' : 'FOLLOW')}
-            className={`px-3.5 h-10 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition ${
+            className={`px-2.5 sm:px-3.5 h-8 sm:h-10 rounded-lg text-[11px] sm:text-xs font-bold flex items-center space-x-1 transition ${
               cameraMode === 'FOLLOW'
                 ? "bg-orange-500/20 text-orange-400 border border-orange-500/40"
                 : "bg-dark-border text-dark-muted hover:text-white"
             }`}
           >
-            {cameraMode === 'FOLLOW' ? <Camera className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            <span>{cameraMode === 'FOLLOW' ? "Seguimiento 3D" : "Vista Global"}</span>
+            {cameraMode === 'FOLLOW' ? <Camera className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{cameraMode === 'FOLLOW' ? "Seguimiento 3D" : "Vista Global"}</span>
+            <span className="sm:hidden">{cameraMode === 'FOLLOW' ? "3D" : "Map"}</span>
           </button>
         </div>
 
         {/* Timeline Scrub Slider */}
-        <div className="flex-1 flex items-center space-x-3">
+        <div className="flex-1 flex items-center space-x-2 sm:space-x-3">
           <input
             type="range"
             min={0}
@@ -317,10 +312,10 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
               setCurrentIndex(idx);
               if (onPointSelect) onPointSelect(idx);
             }}
-            className="w-full accent-orange-500 cursor-pointer h-2 bg-dark-border rounded-lg"
+            className="w-full accent-orange-500 cursor-pointer h-1.5 sm:h-2 bg-dark-border rounded-lg"
           />
-          <span className="text-xs text-dark-muted font-mono whitespace-nowrap">
-            {Math.floor((currentPt?.elapsed_time_sec || 0) / 60)} min
+          <span className="text-[11px] sm:text-xs text-dark-muted font-mono whitespace-nowrap">
+            {Math.floor((currentPt?.elapsed_time_sec || 0) / 60)} m
           </span>
         </div>
       </div>
