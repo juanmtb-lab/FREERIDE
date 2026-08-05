@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       if (fs.existsSync(TOKEN_FILE)) {
         try {
           const tokenData = JSON.parse(fs.readFileSync(TOKEN_FILE, 'utf-8'));
-          GC.loadToken(tokenData);
+          (GC as any).loadToken(tokenData);
           tokenLoaded = true;
         } catch {
           tokenLoaded = false;
