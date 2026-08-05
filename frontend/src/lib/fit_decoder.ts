@@ -49,7 +49,7 @@ export async function decodeFitBuffer(buffer: Buffer, riderWeightKg = 72, maxHr 
     });
 
     const parsedData: any = await new Promise((resolve, reject) => {
-      fitParser.parse(fitBytes, (error: any, data: any) => {
+      fitParser.parse(fitBytes as any, (error: any, data: any) => {
         if (error) reject(error);
         else resolve(data);
       });
