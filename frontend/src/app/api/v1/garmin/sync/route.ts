@@ -112,9 +112,9 @@ export async function POST(request: Request) {
 
       let decodedTrack = null;
 
-      // 1. Try raw .FIT download
+      // 1. Try raw .FIT download (pass activityId as number/any)
       try {
-        await GC.downloadOriginalActivityData({ activityId: actId }, downloadDir);
+        await GC.downloadOriginalActivityData({ activityId: Number(actId) as any }, downloadDir);
         const downloadedFiles = fs.readdirSync(downloadDir);
         for (const file of downloadedFiles) {
           const filePath = path.join(downloadDir, file);
