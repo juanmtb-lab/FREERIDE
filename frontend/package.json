@@ -1,0 +1,37 @@
+{
+  "name": "freeride-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -H 0.0.0.0 -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "adm-zip": "^0.6.0",
+    "clsx": "^2.1.0",
+    "date-fns": "^3.6.0",
+    "fast-xml-parser": "^5.10.1",
+    "fit-file-parser": "^4.1.0",
+    "garmin-connect": "^1.6.2",
+    "lucide-react": "^0.359.0",
+    "maplibre-gl": "^4.1.2",
+    "next": "^14.1.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^2.12.3",
+    "tailwind-merge": "^2.2.2"
+  },
+  "devDependencies": {
+    "@types/maplibre-gl": "^1.14.0",
+    "@types/node": "^20.11.30",
+    "@types/react": "^18.2.67",
+    "@types/react-dom": "^18.2.22",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.4.3"
+  }
+}

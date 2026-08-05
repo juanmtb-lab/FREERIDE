@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+dist
+tmp_garmin
+freeride_garmin_session.json
+freeride_garmin_token.json
+.env
+.env.local
+*.log
