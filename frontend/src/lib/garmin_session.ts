@@ -1,7 +1,14 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
-const SESSION_FILE = path.join(process.cwd(), '..', 'freeride_garmin_session.json');
+function getSessionFilePath(): string {
+  const filename = 'freeride_garmin_session.json';
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    return path.join(os.tmpdir(), filename);
+  }
+  return path.join(process.cwd(), '..', filename);
+}
 
 export interface GarminSessionData {
   email: string;
@@ -10,18 +17,24 @@ export interface GarminSessionData {
 }
 
 export function saveGarminSession(email: string, password?: string): void {
-  const data: GarminSessionData = {
-    email,
-    password,
-    connectedAt: new Date().toISOString()
-  };
-  fs.writeFileSync(SESSION_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  try {
+    const file = getSessionFilePath();
+    const data: GarminSessionData = {
+      email,
+      password,
+      connectedAt: new Date().toISOString()
+    };
+    fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (error) {
+    console.error('Error saving Garmin session:', error);
+  }
 }
 
 export function getGarminSession(): GarminSessionData | null {
   try {
-    if (!fs.existsSync(SESSION_FILE)) return null;
-    const raw = fs.readFileSync(SESSION_FILE, 'utf-8');
+    const file = getSessionFilePath();
+    if (!fs.existsSync(file)) return null;
+    const raw = fs.readFileSync(file, 'utf-8');
     return JSON.parse(raw);
   } catch {
     return null;
@@ -30,8 +43,9 @@ export function getGarminSession(): GarminSessionData | null {
 
 export function clearGarminSession(): void {
   try {
-    if (fs.existsSync(SESSION_FILE)) {
-      fs.unlinkSync(SESSION_FILE);
+    const file = getSessionFilePath();
+    if (fs.existsSync(file)) {
+      fs.unlinkSync(file);
     }
   } catch {}
 }

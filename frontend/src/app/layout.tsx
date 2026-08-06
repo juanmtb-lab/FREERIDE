@@ -16,7 +16,7 @@ export const metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FF5722",
+  themeColor: "#EA580C",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -32,15 +32,16 @@ export default function RootLayout({
     <html lang="es" className="dark">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="FREERIDE" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="application-name" content="FREERIDE" />
       </head>
       <body className="flex h-screen overflow-hidden bg-dark-bg text-dark-text">
         <Sidebar />
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           <Navbar />
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-20 md:pb-8">
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
             {children}
           </main>
         </div>

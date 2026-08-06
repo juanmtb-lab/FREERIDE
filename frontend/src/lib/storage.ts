@@ -1,7 +1,14 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
-const DATA_FILE = path.join(process.cwd(), '..', 'freeride_data.json');
+function getDataFilePath(): string {
+  const filename = 'freeride_data.json';
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    return path.join(os.tmpdir(), filename);
+  }
+  return path.join(process.cwd(), '..', filename);
+}
 
 export interface StoredActivity {
   id: string;
@@ -35,10 +42,11 @@ export interface StoredActivity {
 
 export function getStoredActivities(): StoredActivity[] {
   try {
-    if (!fs.existsSync(DATA_FILE)) {
+    const file = getDataFilePath();
+    if (!fs.existsSync(file)) {
       return [];
     }
-    const data = fs.readFileSync(DATA_FILE, 'utf-8');
+    const data = fs.readFileSync(file, 'utf-8');
     return JSON.parse(data);
   } catch (error) {
     console.error('Error reading freeride_data.json:', error);
@@ -47,11 +55,15 @@ export function getStoredActivities(): StoredActivity[] {
 }
 
 export function saveActivity(activity: StoredActivity): void {
-  const activities = getStoredActivities();
-  // Filter out duplicate by id or title
-  const filtered = activities.filter(a => a.id !== activity.id);
-  filtered.unshift(activity);
-  fs.writeFileSync(DATA_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
+  try {
+    const file = getDataFilePath();
+    const activities = getStoredActivities();
+    const filtered = activities.filter(a => a.id !== activity.id);
+    filtered.unshift(activity);
+    fs.writeFileSync(file, JSON.stringify(filtered, null, 2), 'utf-8');
+  } catch (error) {
+    console.error('Error saving activity:', error);
+  }
 }
 
 export function getActivityById(id: string): StoredActivity | null {

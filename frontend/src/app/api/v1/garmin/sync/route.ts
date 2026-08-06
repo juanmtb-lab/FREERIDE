@@ -2,13 +2,19 @@ import { NextResponse } from 'next/server';
 import { GarminConnect } from 'garmin-connect';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { saveActivity, StoredActivity } from '@/lib/storage';
 import { saveGarminSession, getGarminSession } from '@/lib/garmin_session';
 import { decodeFitBuffer } from '@/lib/fit_decoder';
 import { parseTCXContent } from '@/lib/garmin_parser';
 import { parseGPXContent } from '@/lib/gpx_parser';
 
-const TOKEN_FILE = path.join(process.cwd(), '..', 'freeride_garmin_token.json');
+function getTmpPath(filename: string): string {
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    return path.join(os.tmpdir(), filename);
+  }
+  return path.join(process.cwd(), '..', filename);
+}
 
 // Session Cache variables
 let cachedClient: GarminConnect | null = null;
@@ -16,6 +22,8 @@ let lastLoginTime = 0;
 
 export async function POST(request: Request) {
   try {
+    const TOKEN_FILE = getTmpPath('freeride_garmin_token.json');
+
     let email: string | undefined;
     let password: string | undefined;
 
@@ -97,7 +105,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const downloadDir = path.join(process.cwd(), '..', 'tmp_garmin');
+    const downloadDir = path.join(os.tmpdir(), 'tmp_garmin');
     if (!fs.existsSync(downloadDir)) {
       fs.mkdirSync(downloadDir, { recursive: true });
     }
@@ -112,7 +120,7 @@ export async function POST(request: Request) {
 
       let decodedTrack = null;
 
-      // 1. Try raw .FIT download (pass activityId as number/any)
+      // 1. Try raw .FIT download
       try {
         await GC.downloadOriginalActivityData({ activityId: Number(actId) as any }, downloadDir);
         const downloadedFiles = fs.readdirSync(downloadDir);
