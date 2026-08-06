@@ -19,7 +19,7 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
   const markerEl = useRef<HTMLDivElement | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [cameraMode, setCameraMode] = useState<'FOLLOW' | 'OVERVIEW'>('FOLLOW');
+  const [cameraMode, setCameraMode] = useState<'FOLLOW' | 'OVERVIEW'>('OVERVIEW');
   const [currentIndex, setCurrentIndex] = useState(activeIndex);
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
     const centerLat = points[Math.floor(points.length / 2)].latitude;
     const centerLon = points[Math.floor(points.length / 2)].longitude;
 
-    // Initialize MapLibre with smooth 3D terrain pitch
+    // Initialize MapLibre with wide perspective framing
     map.current = new maplibregl.Map({
       container: mapContainer.current,
       style: {
@@ -74,13 +74,13 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
         ],
         terrain: {
           source: 'terrain-dem',
-          exaggeration: 2.8
+          exaggeration: 2.2
         }
       },
       center: [centerLon, centerLat],
-      zoom: 14.2,
-      pitch: 65,
-      bearing: -15
+      zoom: 12.2, // Wide overview zoom level (not cramped)
+      pitch: 48,
+      bearing: 0
     });
 
     map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
@@ -129,7 +129,7 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
         }
       });
 
-      // Minimalist Bike Marker Element (Center Anchored)
+      // Bike Marker Element (Center Anchored)
       const el = document.createElement('div');
       el.className = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 border-2 border-white shadow-xl shadow-orange-500/70 flex items-center justify-center pointer-events-none';
       el.style.transformOrigin = 'center center';
@@ -146,6 +146,11 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
       marker.current = new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat([points[0].longitude, points[0].latitude])
         .addTo(map.current);
+
+      // Auto-fit bounds with generous padding so the full route is perfectly framed
+      const bounds = new maplibregl.LngLatBounds();
+      coordinates.forEach(c => bounds.extend([c[0], c[1]]));
+      map.current.fitBounds(bounds, { padding: 45, maxZoom: 13.0 });
     });
 
     return () => {
@@ -174,8 +179,8 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
     if (isPlaying && cameraMode === 'FOLLOW') {
       map.current.easeTo({
         center: [p.longitude, p.latitude],
-        zoom: 15.2,
-        pitch: 68,
+        zoom: 13.5, // Wide bird's-eye zoom level showing full highway landscape
+        pitch: 55,
         bearing: headingDeg,
         duration: 120,
         easing: t => t
@@ -210,7 +215,7 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
   const currentPt = points[currentIndex] || points[0];
 
   return (
-    <div className="relative w-full h-[380px] sm:h-[560px] rounded-2xl overflow-hidden border border-dark-border bg-dark-bg shadow-2xl">
+    <div className="relative w-full h-[380px] sm:h-[540px] rounded-2xl overflow-hidden border border-dark-border bg-dark-bg shadow-2xl">
       {/* Map Canvas */}
       <div ref={mapContainer} className="w-full h-full" />
 
@@ -296,7 +301,7 @@ export default function Map3DViewer({ points, activeIndex = 0, onPointSelect }: 
           >
             {cameraMode === 'FOLLOW' ? <Camera className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">{cameraMode === 'FOLLOW' ? "Seguimiento 3D" : "Vista Global"}</span>
-            <span className="sm:hidden">{cameraMode === 'FOLLOW' ? "3D" : "Map"}</span>
+            <span className="sm:hidden">{cameraMode === 'FOLLOW' ? "3D" : "Vista"}</span>
           </button>
         </div>
 
