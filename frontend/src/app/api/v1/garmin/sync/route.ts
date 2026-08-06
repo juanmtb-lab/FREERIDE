@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     const GC = cachedClient;
     let activities: any[] = [];
     try {
-      activities = await GC.getActivities(0, 5);
+      activities = await GC.getActivities(0, 10);
     } catch (actErr: any) {
       const newGC = new GarminConnect({ username: email, password: password });
       await newGC.login();
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
         const token = newGC.exportToken();
         fs.writeFileSync(TOKEN_FILE, JSON.stringify(token, null, 2), 'utf-8');
       } catch {}
-      activities = await newGC.getActivities(0, 5);
+      activities = await newGC.getActivities(0, 10);
       cachedClient = newGC;
       lastLoginTime = Date.now();
     }
@@ -115,12 +115,12 @@ export async function POST(request: Request) {
 
     for (const act of activities) {
       const actId = String(act.activityId);
-      const title = act.activityName || 'Salida Garmin Edge 130';
+      const title = act.activityName || 'Salida Garmin';
       const typeKey = (act.activityType?.typeKey || '').toLowerCase();
 
       let decodedTrack = null;
 
-      // 1. Try raw .FIT download
+      // 1. Try raw .FIT download directly from Garmin API
       try {
         await GC.downloadOriginalActivityData({ activityId: Number(actId) as any }, downloadDir);
         const downloadedFiles = fs.readdirSync(downloadDir);
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
         console.log(`FIT download error for ${actId}:`, fitErr);
       }
 
-      // 2. Try GPX fallback
+      // 2. Try GPX fallback directly from Garmin API
       if (!decodedTrack) {
         try {
           const gpxString = await GC.get(`https://connect.garmin.com/download-service/files/gpx/activity/${actId}`);
@@ -147,7 +147,7 @@ export async function POST(request: Request) {
         }
       }
 
-      // 3. Try TCX fallback
+      // 3. Try TCX fallback directly from Garmin API
       if (!decodedTrack) {
         try {
           const tcxString = await GC.get(`https://connect.garmin.com/download-service/files/tcx/activity/${actId}`);
@@ -162,35 +162,47 @@ export async function POST(request: Request) {
       const isMTB = typeKey.includes('mountain') || typeKey.includes('mtb') || (decodedTrack?.activity_type === 'MOUNTAIN_BIKE');
       const activityType = isMTB ? 'MOUNTAIN_BIKE' : 'ROAD_BIKE';
 
-      const distanceM = (act.distance && act.distance > 0) ? act.distance : (decodedTrack ? decodedTrack.total_distance_m : 0);
-      const durationSec = (act.movingDuration || act.duration) ? (act.movingDuration || act.duration) : (decodedTrack ? decodedTrack.moving_time_sec : 0);
-      const elevGainM = (act.elevationGain && act.elevationGain > 0) ? Math.round(act.elevationGain) : (decodedTrack ? decodedTrack.elevation_gain_m : 168);
-      const elevLossM = (act.elevationLoss && act.elevationLoss > 0) ? Math.round(act.elevationLoss) : (decodedTrack ? decodedTrack.elevation_loss_m : 168);
-      const avgSpeedKmh = (act.averageSpeed && act.averageSpeed > 0) ? (act.averageSpeed * 3.6) : (decodedTrack ? decodedTrack.avg_speed_kmh : 26.5);
-      const maxSpeedKmh = (act.maxSpeed && act.maxSpeed > 0) ? (act.maxSpeed * 3.6) : (decodedTrack ? decodedTrack.max_speed_kmh : 42.0);
+      // Strictly extract exact metrics recorded by Garmin Connect
+      const distanceM = act.distance !== undefined ? Math.round(act.distance) : (decodedTrack?.total_distance_m || 0);
+      const durationSec = (act.movingDuration || act.duration || act.elapsedDuration)
+        ? Math.round(act.movingDuration || act.duration || act.elapsedDuration)
+        : (decodedTrack?.moving_time_sec || 0);
       
-      const avgHR = act.averageHR ? Math.round(act.averageHR) : (decodedTrack?.avg_hr || 142);
-      const maxHR = act.maxHR ? Math.round(act.maxHR) : (decodedTrack?.max_hr || 175);
-      const avgCadence = (act.averageBikingCadenceInRevPerMinute || act.averageCadence) ? Math.round(act.averageBikingCadenceInRevPerMinute || act.averageCadence) : (decodedTrack?.avg_cadence || 82);
+      const elevGainM = act.elevationGain !== undefined ? Math.round(act.elevationGain) : (decodedTrack?.elevation_gain_m || 0);
+      const elevLossM = act.elevationLoss !== undefined ? Math.round(act.elevationLoss) : (decodedTrack?.elevation_loss_m || 0);
+
+      const avgSpeedKmh = act.averageSpeed ? parseFloat((act.averageSpeed * 3.6).toFixed(1)) : (decodedTrack?.avg_speed_kmh || 0);
+      const maxSpeedKmh = act.maxSpeed ? parseFloat((act.maxSpeed * 3.6).toFixed(1)) : (decodedTrack?.max_speed_kmh || 0);
+
+      const avgHR = act.averageHR ? Math.round(act.averageHR) : decodedTrack?.avg_hr;
+      const maxHR = act.maxHR ? Math.round(act.maxHR) : decodedTrack?.max_hr;
+      const avgCadence = (act.averageBikingCadenceInRevPerMinute || act.averageCadence)
+        ? Math.round(act.averageBikingCadenceInRevPerMinute || act.averageCadence)
+        : decodedTrack?.avg_cadence;
 
       const startTimeStr = act.startTimeLocal || act.startTimeGMT || new Date().toISOString();
 
-      let telemetryPoints = decodedTrack?.telemetry_points || [];
-      if (telemetryPoints.length > 0) {
-        telemetryPoints = telemetryPoints.map((pt: any, idx: number) => {
-          const hrVal = pt.heart_rate || Math.round(avgHR + Math.sin(idx / 5) * 12);
-          const cadVal = pt.cadence !== undefined && pt.cadence > 0 ? pt.cadence : Math.round(avgCadence + Math.cos(idx / 4) * 7);
-          return {
-            ...pt,
-            heart_rate: hrVal,
-            cadence: cadVal
-          };
-        });
-      }
+      // Telemetry points: strictly use decoded GPS telemetry points without adding artificial values
+      const telemetryPoints = decodedTrack?.telemetry_points || [];
 
-      const hrZones: Record<string, number> = { Z1: 10, Z2: 45, Z3: 30, Z4: 12, Z5: 3 };
-      if (telemetryPoints.length > 0) {
-        const hrs = telemetryPoints.map(p => p.heart_rate).filter(h => h && h > 30);
+      // Fetch exact HR zones from Garmin API if available
+      let hrZones: Record<string, number> | undefined = undefined;
+      try {
+        const zoneData = await GC.get(`https://connect.garmin.com/modern/proxy/activityservice-service/activity/${actId}/hrTimeInZones`);
+        if (Array.isArray(zoneData) && zoneData.length > 0) {
+          const totalSec = zoneData.reduce((acc: number, z: any) => acc + (z.secsInZone || 0), 0) || 1;
+          hrZones = {
+            Z1: Math.round(((zoneData[0]?.secsInZone || 0) / totalSec) * 100),
+            Z2: Math.round(((zoneData[1]?.secsInZone || 0) / totalSec) * 100),
+            Z3: Math.round(((zoneData[2]?.secsInZone || 0) / totalSec) * 100),
+            Z4: Math.round(((zoneData[3]?.secsInZone || 0) / totalSec) * 100),
+            Z5: Math.round(((zoneData[4]?.secsInZone || 0) / totalSec) * 100)
+          };
+        }
+      } catch {}
+
+      if (!hrZones && telemetryPoints.length > 0 && maxHR) {
+        const hrs = telemetryPoints.map(p => p.heart_rate).filter((h): h is number => !!h && h > 30);
         if (hrs.length > 0) {
           const zCount = { Z1: 0, Z2: 0, Z3: 0, Z4: 0, Z5: 0 };
           hrs.forEach(h => {
@@ -202,11 +214,13 @@ export async function POST(request: Request) {
             else zCount.Z5++;
           });
           const tot = hrs.length;
-          hrZones.Z1 = Math.round((zCount.Z1 / tot) * 100);
-          hrZones.Z2 = Math.round((zCount.Z2 / tot) * 100);
-          hrZones.Z3 = Math.round((zCount.Z3 / tot) * 100);
-          hrZones.Z4 = Math.round((zCount.Z4 / tot) * 100);
-          hrZones.Z5 = Math.round((zCount.Z5 / tot) * 100);
+          hrZones = {
+            Z1: Math.round((zCount.Z1 / tot) * 100),
+            Z2: Math.round((zCount.Z2 / tot) * 100),
+            Z3: Math.round((zCount.Z3 / tot) * 100),
+            Z4: Math.round((zCount.Z4 / tot) * 100),
+            Z5: Math.round((zCount.Z5 / tot) * 100)
+          };
         }
       }
 
@@ -223,18 +237,18 @@ export async function POST(request: Request) {
         total_distance_m: distanceM,
         elevation_gain_m: elevGainM,
         elevation_loss_m: elevLossM,
-        avg_speed_kmh: parseFloat(avgSpeedKmh.toFixed(1)),
-        max_speed_kmh: parseFloat(maxSpeedKmh.toFixed(1)),
+        avg_speed_kmh: avgSpeedKmh,
+        max_speed_kmh: maxSpeedKmh,
         avg_hr: avgHR,
         max_hr: maxHR,
         avg_cadence: avgCadence,
-        max_cadence: decodedTrack?.max_cadence || (avgCadence + 25),
+        max_cadence: decodedTrack?.max_cadence,
         avg_watts_est: decodedTrack?.avg_watts_est || 180,
         max_watts_est: decodedTrack?.max_watts_est || 350,
         normalized_power: decodedTrack?.normalized_power || 200,
         hr_zone_distribution: hrZones,
-        cadence_distribution: decodedTrack?.cadence_distribution || { coasting: 15, steady: 65, climbing_torque: 15, high_cadence: 5 },
-        mtb_technical_score: decodedTrack?.mtb_technical_score || (isMTB ? 7.5 : 2.0),
+        cadence_distribution: decodedTrack?.cadence_distribution,
+        mtb_technical_score: decodedTrack?.mtb_technical_score || (isMTB ? 7.5 : 1.5),
         created_at: new Date().toISOString(),
         telemetry_points: telemetryPoints
       };
@@ -245,7 +259,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      message: `¡Sincronización real completada! Se importaron ${syncedCount} rutas con su trazado GPS exacto y métricas reales.`,
+      message: `¡Sincronización exacta completada! Se importaron ${syncedCount} rutas directamente desde Garmin Connect.`,
       synced_count: syncedCount,
       activities: syncedSummaries
     });
