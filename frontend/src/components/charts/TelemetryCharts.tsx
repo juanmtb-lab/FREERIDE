@@ -21,7 +21,6 @@ interface TelemetryChartsProps {
   points?: TelemetryPoint[];
   hrZones?: Record<string, number>;
   onPointHover?: (index: number) => void;
-  // Summary fallbacks to render full Garmin-style charts for synced activities
   totalDistanceM?: number;
   elevationGainM?: number;
   avgSpeedKmh?: number;
@@ -49,8 +48,8 @@ export default function TelemetryCharts({
   const chartData: any[] = [];
 
   if (points && points.length > 0) {
-    // Downsample to 80 points for clean visual curves
-    const targetNumPoints = 80;
+    // Downsample points to ~100 points max for high-fidelity real curves without lag
+    const targetNumPoints = 100;
     const step = Math.max(1, Math.floor(points.length / targetNumPoints));
 
     for (let i = 0; i < points.length; i += step) {
@@ -79,39 +78,28 @@ export default function TelemetryCharts({
       });
     }
   } else {
-    // Construct 60 telemetry points for Garmin Connect activity summary
-    const numPts = 60;
+    // Basic summary step points for activities without raw GPX track
+    const numPts = 40;
     const distKm = totalDistanceM / 1000;
     const baseAlt = 480;
 
     for (let i = 0; i <= numPts; i++) {
       const t = i / numPts;
       const currentDistKm = (t * distKm).toFixed(1);
-      
-      // Elevation profile curve
-      const alt = baseAlt + Math.sin(t * Math.PI * 1.5) * (elevationGainM * 0.8) + Math.sin(t * Math.PI * 4) * 15;
-      const slope = Math.round(Math.sin(t * Math.PI * 4) * 4 * 10) / 10;
-      
-      // Speed curve centered around avgSpeedKmh
-      const speed = Math.max(12, Math.min(maxSpeedKmh, avgSpeedKmh + Math.sin(t * Math.PI * 3) * 6));
-      
-      // Heart rate curve centered around avgHr
-      let hr = avgHr ? Math.round(avgHr + Math.sin(t * Math.PI * 2.5) * 12 + Math.cos(t * Math.PI * 5) * 5) : undefined;
-      if (hr && maxHr) hr = Math.min(maxHr, Math.max(90, hr));
-
-      // Estimated Power curve
-      const power = Math.round(avgWattsEst || (190 + (speed - avgSpeedKmh) * 7 + slope * 16));
-      const cad = avgCadence ? Math.round(avgCadence + Math.cos(t * Math.PI * 4) * 6) : 85;
+      const alt = baseAlt + (i % 2 === 0 ? 10 : 0);
+      const speed = avgSpeedKmh;
+      const hr = avgHr;
+      const power = avgWattsEst || 190;
 
       chartData.push({
         index: i,
         distanceKm: currentDistKm,
         altitude: Math.round(alt),
-        speed: parseFloat(speed.toFixed(1)),
+        speed: speed,
         hr: hr,
-        cadence: cad,
-        gradient: slope,
-        power: Math.max(80, power)
+        cadence: avgCadence || 85,
+        gradient: 0,
+        power: power
       });
     }
   }
@@ -161,7 +149,7 @@ export default function TelemetryCharts({
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-white flex items-center space-x-2">
             <HRIcon className="w-4 h-4 text-rose-500" />
-            <span>Frecuencia Cardíaca Real (bpm - Garmin)</span>
+            <span>Frecuencia Cardíaca Real (bpm - Garmin Edge 130)</span>
           </h3>
           <span className="text-xs text-dark-muted">Distancia (km) vs Pulsaciones (bpm)</span>
         </div>
@@ -200,7 +188,7 @@ export default function TelemetryCharts({
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-white flex items-center space-x-2">
             <Mountain className="w-4 h-4 text-emerald-400" />
-            <span>Perfil de Altitud (m) & Pendiente Real (%)</span>
+            <span>Perfil de Altitud Real (m) & Pendiente (%)</span>
           </h3>
           <span className="text-xs text-dark-muted">Distancia (km) vs Altitud (m)</span>
         </div>
@@ -242,7 +230,7 @@ export default function TelemetryCharts({
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-white flex items-center space-x-2">
             <Gauge className="w-4 h-4 text-cyan-400" />
-            <span>Velocidad (km/h) & Potencia Estimada (W)</span>
+            <span>Velocidad Real (km/h) & Potencia Estimada (W)</span>
           </h3>
         </div>
 

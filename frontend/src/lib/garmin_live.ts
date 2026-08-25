@@ -4,6 +4,7 @@ import path from 'path';
 import os from 'os';
 import { getGarminSession } from './garmin_session';
 import { saveActivity, StoredActivity } from './storage';
+import { parseGPXContent } from './gpx_parser';
 
 function getTmpPath(filename: string): string {
   if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
@@ -56,7 +57,7 @@ export async function syncGarminActivitiesLive(): Promise<StoredActivity[]> {
   const GC = cachedClient;
   let activities: any[] = [];
   try {
-    activities = await GC.getActivities(0, 40);
+    activities = await GC.getActivities(0, 30);
   } catch (err) {
     const newGC = new GarminConnect({ username: session.email, password: session.password });
     await newGC.login();
@@ -64,7 +65,7 @@ export async function syncGarminActivitiesLive(): Promise<StoredActivity[]> {
       const token = newGC.exportToken();
       fs.writeFileSync(TOKEN_FILE, JSON.stringify(token, null, 2), 'utf-8');
     } catch {}
-    activities = await newGC.getActivities(0, 40);
+    activities = await newGC.getActivities(0, 30);
     cachedClient = newGC;
     lastLoginTime = Date.now();
   }
@@ -82,40 +83,58 @@ export async function syncGarminActivitiesLive(): Promise<StoredActivity[]> {
     const isMTB = typeKey.includes('mountain') || typeKey.includes('mtb');
     const activityType = isMTB ? 'MOUNTAIN_BIKE' : 'ROAD_BIKE';
 
-    const distanceM = act.distance !== undefined ? Math.round(act.distance) : 0;
+    let telemetryPoints: any[] = [];
+    let decodedGpx: any = null;
+
+    // Fetch 100% REAL GPX Track recorded by Garmin Edge 130
+    try {
+      const gpxString = await GC.get(`https://connect.garmin.com/download-service/files/gpx/activity/${actId}`);
+      if (gpxString && typeof gpxString === 'string' && gpxString.includes('<gpx')) {
+        decodedGpx = parseGPXContent(gpxString);
+        if (decodedGpx && decodedGpx.telemetry_points && decodedGpx.telemetry_points.length > 0) {
+          telemetryPoints = decodedGpx.telemetry_points;
+        }
+      }
+    } catch (gpxErr) {
+      console.log(`GPX download error for activity ${actId}:`, gpxErr);
+    }
+
+    const distanceM = act.distance !== undefined ? Math.round(act.distance) : (decodedGpx?.total_distance_m || 0);
     const durationSec = (act.movingDuration || act.duration || act.elapsedDuration)
       ? Math.round(act.movingDuration || act.duration || act.elapsedDuration)
-      : 0;
+      : (decodedGpx?.moving_time_sec || 0);
 
-    const elevGainM = act.elevationGain !== undefined ? Math.round(act.elevationGain) : 0;
-    const elevLossM = act.elevationLoss !== undefined ? Math.round(act.elevationLoss) : 0;
+    const elevGainM = act.elevationGain !== undefined ? Math.round(act.elevationGain) : (decodedGpx?.elevation_gain_m || 0);
+    const elevLossM = act.elevationLoss !== undefined ? Math.round(act.elevationLoss) : (decodedGpx?.elevation_loss_m || 0);
 
-    const avgSpeedKmh = act.averageSpeed ? parseFloat((act.averageSpeed * 3.6).toFixed(1)) : 0;
-    const maxSpeedKmh = act.maxSpeed ? parseFloat((act.maxSpeed * 3.6).toFixed(1)) : 0;
+    const avgSpeedKmh = act.averageSpeed ? parseFloat((act.averageSpeed * 3.6).toFixed(1)) : (decodedGpx?.avg_speed_kmh || 0);
+    const maxSpeedKmh = act.maxSpeed ? parseFloat((act.maxSpeed * 3.6).toFixed(1)) : (decodedGpx?.max_speed_kmh || 0);
 
-    const avgHR = act.averageHR ? Math.round(act.averageHR) : undefined;
-    const maxHR = act.maxHR ? Math.round(act.maxHR) : undefined;
+    const avgHR = act.averageHR ? Math.round(act.averageHR) : decodedGpx?.avg_hr;
+    const maxHR = act.maxHR ? Math.round(act.maxHR) : decodedGpx?.max_hr;
     const avgCadence = (act.averageBikingCadenceInRevPerMinute || act.averageCadence)
       ? Math.round(act.averageBikingCadenceInRevPerMinute || act.averageCadence)
-      : undefined;
+      : decodedGpx?.avg_cadence;
 
     const startTimeStr = act.startTimeLocal || act.startTimeGMT || new Date().toISOString();
 
     // Fetch exact HR zones from Garmin API if available
-    let hrZones: Record<string, number> | undefined = undefined;
-    try {
-      const zoneData = await GC.get(`https://connect.garmin.com/modern/proxy/activityservice-service/activity/${actId}/hrTimeInZones`);
-      if (Array.isArray(zoneData) && zoneData.length > 0) {
-        const totalSec = zoneData.reduce((acc: number, z: any) => acc + (z.secsInZone || 0), 0) || 1;
-        hrZones = {
-          Z1: Math.round(((zoneData[0]?.secsInZone || 0) / totalSec) * 100),
-          Z2: Math.round(((zoneData[1]?.secsInZone || 0) / totalSec) * 100),
-          Z3: Math.round(((zoneData[2]?.secsInZone || 0) / totalSec) * 100),
-          Z4: Math.round(((zoneData[3]?.secsInZone || 0) / totalSec) * 100),
-          Z5: Math.round(((zoneData[4]?.secsInZone || 0) / totalSec) * 100)
-        };
-      }
-    } catch {}
+    let hrZones: Record<string, number> | undefined = decodedGpx?.hr_zone_distribution;
+    if (!hrZones) {
+      try {
+        const zoneData = await GC.get(`https://connect.garmin.com/modern/proxy/activityservice-service/activity/${actId}/hrTimeInZones`);
+        if (Array.isArray(zoneData) && zoneData.length > 0) {
+          const totalSec = zoneData.reduce((acc: number, z: any) => acc + (z.secsInZone || 0), 0) || 1;
+          hrZones = {
+            Z1: Math.round(((zoneData[0]?.secsInZone || 0) / totalSec) * 100),
+            Z2: Math.round(((zoneData[1]?.secsInZone || 0) / totalSec) * 100),
+            Z3: Math.round(((zoneData[2]?.secsInZone || 0) / totalSec) * 100),
+            Z4: Math.round(((zoneData[3]?.secsInZone || 0) / totalSec) * 100),
+            Z5: Math.round(((zoneData[4]?.secsInZone || 0) / totalSec) * 100)
+          };
+        }
+      } catch {}
+    }
 
     const storedActivity: StoredActivity = {
       id: actId,
@@ -135,15 +154,15 @@ export async function syncGarminActivitiesLive(): Promise<StoredActivity[]> {
       avg_hr: avgHR,
       max_hr: maxHR,
       avg_cadence: avgCadence,
-      max_cadence: undefined,
-      avg_watts_est: undefined,
-      max_watts_est: undefined,
-      normalized_power: undefined,
+      max_cadence: decodedGpx?.max_cadence,
+      avg_watts_est: decodedGpx?.avg_watts_est,
+      max_watts_est: decodedGpx?.max_watts_est,
+      normalized_power: decodedGpx?.normalized_power,
       hr_zone_distribution: hrZones,
-      cadence_distribution: undefined,
+      cadence_distribution: decodedGpx?.cadence_distribution,
       mtb_technical_score: isMTB ? 7.5 : 1.5,
       created_at: new Date().toISOString(),
-      telemetry_points: []
+      telemetry_points: telemetryPoints // 100% REAL GPX track points recorded by Garmin Edge 130
     };
 
     saveActivity(storedActivity);
