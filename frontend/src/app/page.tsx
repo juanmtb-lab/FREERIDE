@@ -16,10 +16,29 @@ export default function Dashboard() {
   const [syncing, setSyncing] = useState(false);
 
   const loadData = () => {
-    fetchActivities().then((data) => {
-      setActivities(data);
-      setLoading(false);
-    });
+    // 1. Instantly load from localStorage if available
+    const local = localStorage.getItem('freeride_cached_activities');
+    if (local) {
+      try {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setActivities(parsed);
+          setLoading(false);
+        }
+      } catch {}
+    }
+
+    // 2. Fetch latest from API & sync to localStorage
+    fetchActivities()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setActivities(data);
+          localStorage.setItem('freeride_cached_activities', JSON.stringify(data));
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+
     fetch("/api/v1/garmin/session")
       .then((r) => r.json())
       .then((data) => setGarminSession(data))
@@ -38,10 +57,12 @@ export default function Dashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({})
       });
-      if (res.ok) {
-        loadData();
+      const data = await res.json();
+      if (res.ok && data.activities && Array.isArray(data.activities) && data.activities.length > 0) {
+        setActivities(data.activities);
+        localStorage.setItem('freeride_cached_activities', JSON.stringify(data.activities));
       } else {
-        setIsGarminModalOpen(true);
+        loadData();
       }
     } catch {
       setIsGarminModalOpen(true);
@@ -69,7 +90,7 @@ export default function Dashboard() {
             Panel de Telemetría & Entrenador AI
           </h1>
           <p className="text-xs sm:text-sm text-dark-muted max-w-2xl">
-            Análisis de rendimiento, visualización 3D y planes de entrenamiento personalizados para tus salidas de Carretera y Mountain Bike (Garmin Edge 130).
+            Análisis de rendimiento y planes de entrenamiento personalizados para tus salidas de Carretera y Mountain Bike (Garmin Edge 130).
           </p>
         </div>
       </div>
@@ -126,7 +147,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <h2 className="text-base sm:text-lg font-bold text-white flex items-center space-x-2">
               <ActivityIcon className="w-5 h-5 text-dark-accent" />
-              <span>Actividades Recientes</span>
+              <span>Actividades Recientes ({activities.length})</span>
             </h2>
             <Link
               href="/upload"
@@ -137,17 +158,17 @@ export default function Dashboard() {
             </Link>
           </div>
 
-          {loading ? (
+          {loading && activities.length === 0 ? (
             <div className="glass-panel p-8 sm:p-12 text-center text-dark-muted rounded-2xl text-xs sm:text-sm">
-              Cargando actividades de Garmin...
+              Cargando actividades reales de Garmin Connect...
             </div>
           ) : activities.length === 0 ? (
             <div className="glass-panel p-8 sm:p-12 text-center rounded-2xl space-y-4">
               <UploadCloud className="w-10 h-10 sm:w-12 sm:h-12 text-dark-muted mx-auto" />
               <div className="space-y-1">
-                <h3 className="text-sm sm:text-base font-bold text-white">No hay actividades aún</h3>
+                <h3 className="text-sm sm:text-base font-bold text-white">No hay actividades cargadas</h3>
                 <p className="text-xs text-dark-muted max-w-sm mx-auto">
-                  Conecta tu cuenta de Garmin Connect o sube un archivo .FIT de Garmin Edge 130 para comenzar.
+                  Haz clic en "Sincronizar Garmin Connect" para importar todas tus rutas reales desde el 5 de agosto en adelante.
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -236,7 +257,7 @@ export default function Dashboard() {
               </div>
               <p className="text-xs text-dark-muted leading-relaxed">
                 {garminSession?.connected
-                  ? `Sesión activa (${garminSession.email}). Haz clic para refrescar e importar tus nuevas salidas.`
+                  ? `Sesión activa (${garminSession.email}). Haz clic para reflejar tus rutas reales desde el 5 de agosto.`
                   : "Sincroniza tus salidas de Garmin Edge 130 de forma automática."}
               </p>
             </div>
@@ -259,7 +280,7 @@ export default function Dashboard() {
                 <span>Entrenador AI FREERIDE</span>
               </h3>
               <p className="text-xs text-dark-muted leading-relaxed">
-                Planificación adaptativa basada en tu carga (CTL/ATL/TSB) y perfil fisiológico.
+                Planificación adaptativa basada en tu carga (CTL/ATL/TSB) y perfil fisiológico real.
               </p>
             </div>
 

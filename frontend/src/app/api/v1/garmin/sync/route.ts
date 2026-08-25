@@ -3,7 +3,7 @@ import { GarminConnect } from 'garmin-connect';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { saveActivity, getActivityById, StoredActivity } from '@/lib/storage';
+import { saveActivity, getStoredActivities, StoredActivity } from '@/lib/storage';
 import { saveGarminSession, getGarminSession } from '@/lib/garmin_session';
 
 function getTmpPath(filename: string): string {
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     const GC = cachedClient;
     let activities: any[] = [];
     try {
-      activities = await GC.getActivities(0, 30);
+      activities = await GC.getActivities(0, 40);
     } catch (actErr: any) {
       const newGC = new GarminConnect({ username: email, password: password });
       await newGC.login();
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
         const token = newGC.exportToken();
         fs.writeFileSync(TOKEN_FILE, JSON.stringify(token, null, 2), 'utf-8');
       } catch {}
-      activities = await newGC.getActivities(0, 30);
+      activities = await newGC.getActivities(0, 40);
       cachedClient = newGC;
       lastLoginTime = Date.now();
     }
@@ -97,12 +97,12 @@ export async function POST(request: Request) {
     if (!activities || activities.length === 0) {
       return NextResponse.json({
         message: 'No se encontraron actividades en tu cuenta de Garmin Connect.',
-        synced_count: 0
+        synced_count: 0,
+        activities: getStoredActivities()
       });
     }
 
     let syncedCount = 0;
-    const syncedSummaries = [];
 
     for (const act of activities) {
       const actId = String(act.activityId);
@@ -179,13 +179,14 @@ export async function POST(request: Request) {
 
       saveActivity(storedActivity);
       syncedCount++;
-      syncedSummaries.push({ id: actId, title });
     }
+
+    const allStored = getStoredActivities();
 
     return NextResponse.json({
       message: `¡Sincronización exacta completada! Se importaron ${syncedCount} rutas reales directamente desde Garmin Connect.`,
       synced_count: syncedCount,
-      activities: syncedSummaries
+      activities: allStored
     });
   } catch (error: any) {
     console.error('Garmin Sync Error:', error);
