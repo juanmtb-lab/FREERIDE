@@ -2,8 +2,6 @@
 
 import { TelemetryPoint } from "@/types/telemetry";
 import {
-  AreaChart,
-  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -13,7 +11,9 @@ import {
   CartesianGrid,
   BarChart,
   Bar,
-  Cell
+  Cell,
+  AreaChart,
+  Area
 } from "recharts";
 import { Mountain, Gauge, Activity as HRIcon, Zap } from "lucide-react";
 
@@ -67,14 +67,14 @@ export default function TelemetryCharts({ points, hrZones, onPointHover }: Telem
   };
 
   const zoneLabels: Record<string, string> = {
-    Z1: "Zona 1 - Recuperación (<60%)",
+    Z1: "Zona 1 - Calentamiento / Suave (<60%)",
     Z2: "Zona 2 - Resistencia (60-70%)",
-    Z3: "Zona 3 - Tempo (70-80%)",
+    Z3: "Zona 3 - Aeróbica (70-80%)",
     Z4: "Zona 4 - Umbral (80-90%)",
-    Z5: "Zona 5 - Máximo / VO2Max (>90%)"
+    Z5: "Zona 5 - Máximo (>90%)"
   };
 
-  const normalizedHrZones: Record<string, number> = { Z1: 12, Z2: 45, Z3: 28, Z4: 12, Z5: 3 };
+  const normalizedHrZones: Record<string, number> = { Z1: 8, Z2: 44, Z3: 33, Z4: 12, Z5: 3 };
   if (hrZones && Object.keys(hrZones).length > 0) {
     Object.entries(hrZones).forEach(([k, v]) => {
       const upper = k.toUpperCase();
@@ -90,11 +90,6 @@ export default function TelemetryCharts({ points, hrZones, onPointHover }: Telem
     pct: normalizedHrZones[zone] || 0,
     color: zoneColors[zone] || "#FF5722"
   }));
-
-  // Dynamic Y-Axis scale focused on actual HR range (no flat compressed lines!)
-  const validHrs = chartData.map(d => d.hr).filter((h): h is number => h !== undefined && h > 40);
-  const minHr = validHrs.length > 0 ? Math.max(30, Math.min(...validHrs) - 4) : 100;
-  const maxHr = validHrs.length > 0 ? Math.max(...validHrs) + 4 : 180;
 
   // Dynamic Y-Axis scale for cadence
   const validCads = chartData.map(d => d.cadence).filter((c): c is number => c !== undefined && c > 0);
@@ -176,60 +171,32 @@ export default function TelemetryCharts({ points, hrZones, onPointHover }: Telem
         </div>
       </div>
 
-      {/* 3. Real Heart Rate Chart (Dynamic Scale) & HR Zones Bars */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 glass-panel p-5 rounded-2xl">
-          <h3 className="text-sm font-bold text-white mb-4 flex items-center space-x-2">
+      {/* 3. Garmin HR Zones Breakdown (Full Width) */}
+      <div className="glass-panel p-5 rounded-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-white flex items-center space-x-2">
             <HRIcon className="w-4 h-4 text-rose-500" />
-            <span>Frecuencia Cardíaca Real (bpm)</span>
+            <span>Zonas de Frecuencia Cardíaca Garmin (Edge 130)</span>
           </h3>
-          <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={chartData}
-                onMouseMove={(e) => {
-                  if (e && e.activePayload && e.activePayload[0] && onPointHover) {
-                    onPointHover(e.activePayload[0].payload.index);
-                  }
-                }}
-              >
-                <defs>
-                  <linearGradient id="hrGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#EF4444" stopOpacity={0.5} />
-                    <stop offset="95%" stopColor="#EF4444" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#232D3F" vertical={false} />
-                <XAxis dataKey="distanceKm" stroke="#9CA3AF" tickLine={false} tick={{ fontSize: 11 }} />
-                <YAxis stroke="#EF4444" domain={[minHr, maxHr]} tickLine={false} tick={{ fontSize: 11 }} />
-                <Tooltip contentStyle={{ backgroundColor: "#151C28", borderColor: "#232D3F", borderRadius: "12px", color: "#FFF" }} />
-                <Area type="monotone" dataKey="hr" stroke="#EF4444" strokeWidth={2.5} fillOpacity={1} fill="url(#hrGradient)" name="Pulsaciones (bpm)" connectNulls />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          <span className="text-xs text-dark-muted">Distribución del esfuerzo por zonas Z1-Z5</span>
         </div>
-
-        {/* HR Zones Breakdown - Fixed Recharts Data Binding */}
-        <div className="glass-panel p-5 rounded-2xl flex flex-col justify-between">
-          <h3 className="text-sm font-bold text-white mb-3">Zonas de Frecuencia Cardíaca Garmin</h3>
-          <div className="h-52 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={hrZoneBarData} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#232D3F" horizontal={false} />
-                <XAxis type="number" stroke="#9CA3AF" tickLine={false} tick={{ fontSize: 10 }} unit="%" domain={[0, 100]} />
-                <YAxis type="category" dataKey="zone" stroke="#9CA3AF" tickLine={false} tick={{ fontSize: 12, fontWeight: 'bold' }} width={30} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: "#151C28", borderColor: "#232D3F", borderRadius: "12px", color: "#FFF" }}
-                  formatter={(val: any, _, item: any) => [`${val}% del tiempo`, item.payload.label]}
-                />
-                <Bar dataKey="pct" radius={[0, 6, 6, 0]} isAnimationActive={false}>
-                  {hrZoneBarData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        <div className="h-56 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={hrZoneBarData} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#232D3F" horizontal={false} />
+              <XAxis type="number" stroke="#9CA3AF" tickLine={false} tick={{ fontSize: 11 }} unit="%" domain={[0, 100]} />
+              <YAxis type="category" dataKey="zone" stroke="#9CA3AF" tickLine={false} tick={{ fontSize: 12, fontWeight: 'bold' }} width={35} />
+              <Tooltip
+                contentStyle={{ backgroundColor: "#151C28", borderColor: "#232D3F", borderRadius: "12px", color: "#FFF" }}
+                formatter={(val: any, _, item: any) => [`${val}% del tiempo`, item.payload.label]}
+              />
+              <Bar dataKey="pct" radius={[0, 6, 6, 0]} isAnimationActive={false}>
+                {hrZoneBarData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
