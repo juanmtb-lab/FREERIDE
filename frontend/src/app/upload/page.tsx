@@ -155,7 +155,7 @@ export default function UploadPage() {
             ) : (
               <>
                 <Bike className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>Analizar Telemetría & Generar 3D</span>
+                <span>Analizar Telemetría & Diagnóstico AI</span>
               </>
             )}
           </button>

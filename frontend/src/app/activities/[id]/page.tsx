@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { ActivityDetail, AIInsight } from "@/types/telemetry";
 import { fetchActivityDetail, fetchActivityCoachInsight, deleteActivity } from "@/lib/api";
 import { formatDistance, formatElevation, formatTime, formatSpeed, formatWatts } from "@/lib/utils";
-import Map3DViewer from "@/components/3d-viewer/Map3DViewer";
 import TelemetryCharts from "@/components/charts/TelemetryCharts";
 import {
   Bike,
@@ -166,25 +165,6 @@ export default function ActivityDetailPage() {
             </p>
           </div>
         </div>
-      </div>
-
-      {/* 3D Route Map & Interactive Playback Engine */}
-      <div className="space-y-3">
-        <h2 className="text-lg font-bold text-white flex items-center space-x-2">
-          <Mountain className="w-5 h-5 text-dark-accent" />
-          <span>Visualización 3D Real del Recorrido (Garmin Edge 130)</span>
-        </h2>
-        {activity.telemetry_points && activity.telemetry_points.length > 0 ? (
-          <Map3DViewer
-            points={activity.telemetry_points}
-            activeIndex={activeIndex}
-            onPointSelect={(idx) => setActiveIndex(idx)}
-          />
-        ) : (
-          <div className="glass-panel p-8 text-center text-dark-muted rounded-2xl">
-            No hay puntos de track GPS disponibles para esta actividad. Sincroniza de nuevo para descargar el track completo.
-          </div>
-        )}
       </div>
 
       {/* 2D Synchronized Telemetry Charts */}

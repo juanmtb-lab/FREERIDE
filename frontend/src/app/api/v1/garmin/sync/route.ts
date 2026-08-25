@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     const GC = cachedClient;
     let activities: any[] = [];
     try {
-      activities = await GC.getActivities(0, 10);
+      activities = await GC.getActivities(0, 50);
     } catch (actErr: any) {
       const newGC = new GarminConnect({ username: email, password: password });
       await newGC.login();
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
         const token = newGC.exportToken();
         fs.writeFileSync(TOKEN_FILE, JSON.stringify(token, null, 2), 'utf-8');
       } catch {}
-      activities = await newGC.getActivities(0, 10);
+      activities = await newGC.getActivities(0, 50);
       cachedClient = newGC;
       lastLoginTime = Date.now();
     }
