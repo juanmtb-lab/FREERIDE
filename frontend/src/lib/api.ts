@@ -5,23 +5,53 @@ const API_BASE = "/api/v1";
 export async function fetchActivities(): Promise<ActivitySummary[]> {
   try {
     const res = await fetch(`${API_BASE}/activities`);
-    if (!res.ok) return [];
-    return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
   } catch (error) {
     console.error("Error fetching activities:", error);
-    return [];
   }
+
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem("freeride_cached_activities");
+      if (cached) {
+        const list = JSON.parse(cached);
+        if (Array.isArray(list) && list.length > 0) return list;
+      }
+    } catch {}
+  }
+
+  return [];
 }
 
 export async function fetchActivityDetail(id: string): Promise<ActivityDetail | null> {
   try {
     const res = await fetch(`${API_BASE}/activities/${id}`);
-    if (!res.ok) return null;
-    return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.id) return data;
+    }
   } catch (error) {
     console.error("Error fetching activity detail:", error);
-    return null;
   }
+
+  // Client-side localStorage fallback guarantee
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem("freeride_cached_activities");
+      if (cached) {
+        const list = JSON.parse(cached);
+        if (Array.isArray(list)) {
+          const match = list.find((a: any) => String(a.id) === String(id) || String(a.strava_id) === String(id));
+          if (match) return match;
+        }
+      }
+    } catch {}
+  }
+
+  return null;
 }
 
 export async function uploadActivityFile(file: File, title?: string, description?: string): Promise<ActivitySummary> {
@@ -65,5 +95,19 @@ export async function deleteActivity(id: string): Promise<boolean> {
   const res = await fetch(`${API_BASE}/activities/${id}`, {
     method: "DELETE"
   });
+
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem("freeride_cached_activities");
+      if (cached) {
+        const list = JSON.parse(cached);
+        if (Array.isArray(list)) {
+          const filtered = list.filter((a: any) => String(a.id) !== String(id));
+          localStorage.setItem("freeride_cached_activities", JSON.stringify(filtered));
+        }
+      }
+    } catch {}
+  }
+
   return res.ok;
 }
