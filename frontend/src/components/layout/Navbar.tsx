@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bike, UploadCloud, RefreshCw, LogOut, CheckCircle2 } from "lucide-react";
+import { Bike, UploadCloud, RefreshCw, LogOut, CheckCircle2, BrainCircuit } from "lucide-react";
 import GarminSyncModal from "@/components/garmin/GarminSyncModal";
+import StravaSyncModal from "@/components/strava/StravaSyncModal";
 
 export default function Navbar() {
   const [isGarminModalOpen, setIsGarminModalOpen] = useState(false);
+  const [isStravaModalOpen, setIsStravaModalOpen] = useState(false);
   const [session, setSession] = useState<{ connected: boolean; email?: string } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
@@ -60,8 +62,8 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="h-14 sm:h-16 bg-dark-card/95 backdrop-blur-md border-b border-dark-border px-4 sm:px-6 flex items-center justify-between md:justify-end shrink-0 z-30">
-        {/* Mobile Brand Link to Home / */}
+      <header className="h-14 sm:h-16 bg-dark-card/95 backdrop-blur-md border-b border-dark-border px-4 sm:px-6 flex items-center justify-between shrink-0 z-30">
+        {/* Mobile Brand Link */}
         <Link href="/" className="flex items-center space-x-2 md:hidden hover:opacity-90 transition cursor-pointer group">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center shadow-md shadow-orange-500/20">
             <Bike className="w-5 h-5 text-white" />
@@ -69,8 +71,27 @@ export default function Navbar() {
           <span className="font-bold text-base text-white tracking-wider group-hover:text-orange-400 transition-colors">FREERIDE</span>
         </Link>
 
-        {/* User Status & Quick Actions (Hidden or compact on mobile to prevent header clipping) */}
+        {/* AI Coach Banner Badge */}
+        <Link
+          href="/coach"
+          className="hidden md:flex items-center space-x-2 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/20 border border-orange-500/30 px-3.5 py-1.5 rounded-xl hover:border-orange-500/60 transition group"
+        >
+          <BrainCircuit className="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform" />
+          <span className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors">Entrenador AI Activo</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-1"></span>
+        </Link>
+
+        {/* User Status & Quick Actions */}
         <div className="flex items-center space-x-2 sm:space-x-3">
+          <button
+            onClick={() => setIsStravaModalOpen(true)}
+            className="flex items-center space-x-1 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border border-orange-500/30 text-[11px] sm:text-xs px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl transition"
+            title="Conectar o fusionar con Strava Premium"
+          >
+            <span className="font-black text-xs">S</span>
+            <span className="hidden sm:inline">Strava Premium</span>
+          </button>
+
           {session?.connected ? (
             <div className="flex items-center space-x-1.5 sm:space-x-2 bg-dark-bg/80 border border-emerald-500/30 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl">
               <span className="flex items-center space-x-1 text-[11px] sm:text-xs text-emerald-400 font-semibold">
@@ -79,7 +100,6 @@ export default function Navbar() {
                 <span className="text-white max-w-[90px] sm:max-w-[120px] truncate">{session.email}</span>
               </span>
 
-              {/* Quick Refresh Icon Button */}
               <button
                 onClick={handleQuickRefresh}
                 disabled={syncing}
@@ -130,6 +150,14 @@ export default function Navbar() {
         onClose={() => setIsGarminModalOpen(false)}
         onSuccess={() => {
           checkSession();
+          window.location.reload();
+        }}
+      />
+
+      <StravaSyncModal
+        isOpen={isStravaModalOpen}
+        onClose={() => setIsStravaModalOpen(false)}
+        onSuccess={() => {
           window.location.reload();
         }}
       />
