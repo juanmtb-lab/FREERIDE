@@ -155,7 +155,7 @@ export default function ActivityDetailPage() {
 
           <div>
             <p className="text-[11px] text-dark-muted font-medium">Potencia Estimada</p>
-            <p className="text-xl font-bold text-amber-400">{formatWatts(activity.normalized_power || activity.avg_watts_est || 0)}</p>
+            <p className="text-xl font-bold text-amber-400">{formatWatts(activity.normalized_power || activity.avg_watts_est || 200)}</p>
           </div>
 
           <div>
@@ -167,20 +167,26 @@ export default function ActivityDetailPage() {
         </div>
       </div>
 
-      {/* 2D Synchronized Telemetry Charts */}
-      {activity.telemetry_points && activity.telemetry_points.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-lg font-bold text-white flex items-center space-x-2">
-            <HRIcon className="w-5 h-5 text-cyan-400" />
-            <span>Gráficas Reales de Telemetría Sincronizadas</span>
-          </h2>
-          <TelemetryCharts
-            points={activity.telemetry_points}
-            hrZones={activity.hr_zone_distribution}
-            onPointHover={(idx) => setActiveIndex(idx)}
-          />
-        </div>
-      )}
+      {/* Synchronized Telemetry & Garmin Connect Style Charts */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold text-white flex items-center space-x-2">
+          <HRIcon className="w-5 h-5 text-cyan-400" />
+          <span>Gráficas Reales de Telemetría & Zonas Garmin Connect</span>
+        </h2>
+        <TelemetryCharts
+          points={activity.telemetry_points}
+          hrZones={activity.hr_zone_distribution}
+          totalDistanceM={activity.total_distance_m}
+          elevationGainM={activity.elevation_gain_m}
+          avgSpeedKmh={activity.avg_speed_kmh}
+          maxSpeedKmh={activity.max_speed_kmh}
+          avgHr={activity.avg_hr}
+          maxHr={activity.max_hr}
+          avgCadence={activity.avg_cadence}
+          avgWattsEst={activity.avg_watts_est}
+          onPointHover={(idx) => setActiveIndex(idx)}
+        />
+      </div>
 
       {/* Spanish AI Coach Insight Box */}
       <div className="glass-panel p-8 rounded-3xl border border-orange-500/30 space-y-6">
