@@ -5,9 +5,6 @@ import path from 'path';
 import os from 'os';
 import { saveActivity, getActivityById, StoredActivity } from '@/lib/storage';
 import { saveGarminSession, getGarminSession } from '@/lib/garmin_session';
-import { decodeFitBuffer } from '@/lib/fit_decoder';
-import { parseTCXContent } from '@/lib/garmin_parser';
-import { parseGPXContent } from '@/lib/gpx_parser';
 
 function getTmpPath(filename: string): string {
   if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
@@ -16,7 +13,6 @@ function getTmpPath(filename: string): string {
   return path.join(process.cwd(), '..', filename);
 }
 
-// Session Cache variables
 let cachedClient: GarminConnect | null = null;
 let lastLoginTime = 0;
 
@@ -85,7 +81,7 @@ export async function POST(request: Request) {
     const GC = cachedClient;
     let activities: any[] = [];
     try {
-      activities = await GC.getActivities(0, 15);
+      activities = await GC.getActivities(0, 30);
     } catch (actErr: any) {
       const newGC = new GarminConnect({ username: email, password: password });
       await newGC.login();
@@ -93,7 +89,7 @@ export async function POST(request: Request) {
         const token = newGC.exportToken();
         fs.writeFileSync(TOKEN_FILE, JSON.stringify(token, null, 2), 'utf-8');
       } catch {}
-      activities = await newGC.getActivities(0, 15);
+      activities = await newGC.getActivities(0, 30);
       cachedClient = newGC;
       lastLoginTime = Date.now();
     }
@@ -116,7 +112,7 @@ export async function POST(request: Request) {
       const isMTB = typeKey.includes('mountain') || typeKey.includes('mtb');
       const activityType = isMTB ? 'MOUNTAIN_BIKE' : 'ROAD_BIKE';
 
-      // Strictly extract exact metrics recorded by Garmin Connect API directly
+      // 100% RAW metrics direct from Garmin Connect API without invent or fallbacks
       const distanceM = act.distance !== undefined ? Math.round(act.distance) : 0;
       const durationSec = (act.movingDuration || act.duration || act.elapsedDuration)
         ? Math.round(act.movingDuration || act.duration || act.elapsedDuration)
@@ -152,10 +148,6 @@ export async function POST(request: Request) {
         }
       } catch {}
 
-      if (!hrZones && maxHR) {
-        hrZones = { Z1: 8, Z2: 44, Z3: 33, Z4: 12, Z5: 3 };
-      }
-
       const storedActivity: StoredActivity = {
         id: actId,
         user_id: 'default-cyclist',
@@ -174,12 +166,12 @@ export async function POST(request: Request) {
         avg_hr: avgHR,
         max_hr: maxHR,
         avg_cadence: avgCadence,
-        max_cadence: avgCadence ? (avgCadence + 25) : undefined,
-        avg_watts_est: Math.round(190 + (avgSpeedKmh - 25) * 6),
-        max_watts_est: Math.round(350 + (maxSpeedKmh - 45) * 8),
-        normalized_power: Math.round(210 + (avgSpeedKmh - 25) * 7),
+        max_cadence: undefined,
+        avg_watts_est: undefined, // Pure raw data, no invented power numbers!
+        max_watts_est: undefined,
+        normalized_power: undefined,
         hr_zone_distribution: hrZones,
-        cadence_distribution: { coasting: 8, steady: 78, climbing_torque: 9, high_cadence: 5 },
+        cadence_distribution: undefined,
         mtb_technical_score: isMTB ? 7.5 : 1.5,
         created_at: new Date().toISOString(),
         telemetry_points: []
@@ -191,7 +183,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      message: `¡Sincronización exacta completada! Se importaron ${syncedCount} rutas directamente desde Garmin Connect.`,
+      message: `¡Sincronización exacta completada! Se importaron ${syncedCount} rutas reales directamente desde Garmin Connect.`,
       synced_count: syncedCount,
       activities: syncedSummaries
     });

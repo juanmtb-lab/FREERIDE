@@ -62,171 +62,23 @@ export interface FreerideSettings {
   rider_ftp?: number;
 }
 
-function generateAuthenticGarminJumillaActivities(): StoredActivity[] {
-  const numPts = 450;
-  const startLat = 38.4752;
-  const startLon = -1.3255;
-
-  const points60k: any[] = [];
-  for (let i = 0; i < numPts; i++) {
-    const t = i / numPts;
-    let lat: number;
-    let lon: number;
-
-    if (t < 0.5) {
-      const segT = t / 0.5;
-      lat = startLat + segT * 0.11 + Math.sin(segT * Math.PI) * 0.012;
-      lon = startLon + segT * 0.095;
-    } else {
-      const segT = (t - 0.5) / 0.5;
-      lat = (startLat + 0.11) - segT * 0.11 - Math.sin(segT * Math.PI) * 0.008;
-      lon = (startLon + 0.095) - segT * 0.095;
-    }
-
-    let alt: number;
-    if (t < 0.75) {
-      alt = 470 + Math.pow(t / 0.75, 1.2) * 210 + Math.sin(t * 14) * 5;
-    } else {
-      const descT = (t - 0.75) / 0.25;
-      alt = 680 - Math.pow(descT, 1.1) * 210;
-    }
-
-    const dist = Math.round(t * 60350);
-    const speed = t > 0.75 && t < 0.90 ? 52 + Math.sin(t * 20) * 12 : 28.6 + Math.sin(t * 15) * 4;
-
-    let hr = Math.round(118 + Math.pow(t, 0.8) * 42 + Math.sin(t * 25) * 8);
-    if (t > 0.35 && t < 0.45) hr += 24;
-    if (t > 0.65 && t < 0.75) hr += 28;
-    if (t > 0.95) hr += 22;
-    hr = Math.min(178, Math.max(102, hr));
-
-    const cad = Math.round(86 + Math.cos(t * 18) * 7);
-    const slope = Math.round((Math.sin(t * 16) * 5) * 10) / 10;
-    const power = Math.round(210 + slope * 20 + (speed - 28.6) * 5);
-
-    points60k.push({
-      id: `pt-${i}`,
-      timestamp: new Date(new Date("2026-08-25T09:15:00.000Z").getTime() + Math.round(t * 7596 * 1000)).toISOString(),
-      elapsed_time_sec: Math.round(t * 7596),
-      latitude: lat,
-      longitude: lon,
-      altitude_m: Math.round(alt * 10) / 10,
-      distance_m: dist,
-      speed_kmh: parseFloat(speed.toFixed(1)),
-      heart_rate: hr,
-      cadence: cad,
-      gradient_pct: slope,
-      estimated_power_w: Math.max(95, power),
-      temperature_c: 29
-    });
-  }
-
-  // Today's 60.35 km Ride (25 ago 2026 from Garmin Connect Screenshot 1)
-  const todayActivity: StoredActivity = {
-    id: "23675129900",
-    user_id: "default-cyclist",
-    title: "Jumilla Ciclismo en ruta",
-    description: "Sincronizada desde Garmin Connect (Garmin Edge 130). 25 ago @ 9:15.",
-    activity_type: "ROAD_BIKE",
-    file_type: "FIT",
-    start_time: "2026-08-25T09:15:00.000Z",
-    total_elapsed_time_sec: 7596, // 2:06:36
-    moving_time_sec: 7596,
-    total_distance_m: 60350, // 60,35 km
-    elevation_gain_m: 320,
-    elevation_loss_m: 320,
-    avg_speed_kmh: 28.6, // 28,6 km/h media
-    max_speed_kmh: 58.4,
-    avg_hr: 144,
-    max_hr: 178,
-    avg_cadence: 86,
-    max_cadence: 114,
-    avg_watts_est: 210,
-    max_watts_est: 410,
-    normalized_power: 230,
-    hr_zone_distribution: {
-      Z1: 8,
-      Z2: 44,
-      Z3: 33,
-      Z4: 12,
-      Z5: 3
-    },
-    cadence_distribution: { coasting: 8, steady: 78, climbing_torque: 9, high_cadence: 5 },
-    mtb_technical_score: 1.5,
-    created_at: new Date().toISOString(),
-    telemetry_points: points60k,
-    strava_id: "12059489999",
-    strava_url: "https://www.strava.com/activities/12059489999",
-    suffer_score: 95
-  };
-
-  // Previous 36.16 km Ride (5 ago 2026)
-  const prevActivity: StoredActivity = {
-    id: "23675121185",
-    user_id: "default-cyclist",
-    title: "Jumilla Ciclismo en ruta",
-    description: "Sincronizada desde Garmin Connect (Garmin Edge 130). 5 ago @ 9:09.",
-    activity_type: "ROAD_BIKE",
-    file_type: "FIT",
-    start_time: "2026-08-05T09:09:00.000Z",
-    total_elapsed_time_sec: 4611,
-    moving_time_sec: 4611,
-    total_distance_m: 36160,
-    elevation_gain_m: 170,
-    elevation_loss_m: 170,
-    avg_speed_kmh: 28.2,
-    max_speed_kmh: 63.6,
-    avg_hr: 138,
-    max_hr: 176,
-    avg_cadence: 84,
-    max_cadence: 112,
-    avg_watts_est: 195,
-    max_watts_est: 380,
-    normalized_power: 215,
-    hr_zone_distribution: {
-      Z1: 9,
-      Z2: 48,
-      Z3: 31,
-      Z4: 8,
-      Z5: 0
-    },
-    cadence_distribution: { coasting: 10, steady: 75, climbing_torque: 10, high_cadence: 5 },
-    mtb_technical_score: 1.5,
-    created_at: new Date().toISOString(),
-    telemetry_points: points60k,
-    strava_id: "12059483011",
-    strava_url: "https://www.strava.com/activities/12059483011",
-    suffer_score: 64
-  };
-
-  return [todayActivity, prevActivity];
-}
-
 export function getStoredActivities(): StoredActivity[] {
   try {
     const file = getDataFilePath();
     if (!fs.existsSync(file)) {
-      const initial = generateAuthenticGarminJumillaActivities();
-      try {
-        fs.writeFileSync(file, JSON.stringify(initial, null, 2), 'utf-8');
-      } catch {}
-      return initial;
+      return [];
     }
     const data = fs.readFileSync(file, 'utf-8');
     const parsed = JSON.parse(data);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      const initial = generateAuthenticGarminJumillaActivities();
-      try {
-        fs.writeFileSync(file, JSON.stringify(initial, null, 2), 'utf-8');
-      } catch {}
-      return initial;
+    if (!Array.isArray(parsed)) {
+      return [];
     }
-    // Always return sorted newest first
+    // Always return sorted newest first by start_time
     parsed.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
     return parsed;
   } catch (error) {
     console.error('Error reading freeride_data.json:', error);
-    return generateAuthenticGarminJumillaActivities();
+    return [];
   }
 }
 
