@@ -3,7 +3,7 @@ import { GarminConnect } from 'garmin-connect';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { saveActivity, StoredActivity } from '@/lib/storage';
+import { saveActivity, getActivityById, StoredActivity } from '@/lib/storage';
 import { saveGarminSession, getGarminSession } from '@/lib/garmin_session';
 import { decodeFitBuffer } from '@/lib/fit_decoder';
 import { parseTCXContent } from '@/lib/garmin_parser';
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     const GC = cachedClient;
     let activities: any[] = [];
     try {
-      activities = await GC.getActivities(0, 50);
+      activities = await GC.getActivities(0, 15);
     } catch (actErr: any) {
       const newGC = new GarminConnect({ username: email, password: password });
       await newGC.login();
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
         const token = newGC.exportToken();
         fs.writeFileSync(TOKEN_FILE, JSON.stringify(token, null, 2), 'utf-8');
       } catch {}
-      activities = await newGC.getActivities(0, 50);
+      activities = await newGC.getActivities(0, 15);
       cachedClient = newGC;
       lastLoginTime = Date.now();
     }
@@ -115,6 +115,15 @@ export async function POST(request: Request) {
 
     for (const act of activities) {
       const actId = String(act.activityId);
+
+      // Fast check: if activity is already in storage with telemetry, skip heavy downloads!
+      const existing = getActivityById(actId);
+      if (existing && existing.telemetry_points && existing.telemetry_points.length > 0) {
+        syncedCount++;
+        syncedSummaries.push({ id: actId, title: existing.title });
+        continue;
+      }
+
       const title = act.activityName || 'Salida Garmin';
       const typeKey = (act.activityType?.typeKey || '').toLowerCase();
 

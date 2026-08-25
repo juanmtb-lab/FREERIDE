@@ -181,6 +181,8 @@ export function getStoredActivities(): StoredActivity[] {
       } catch {}
       return initial;
     }
+    // Always return sorted newest first
+    parsed.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
     return parsed;
   } catch (error) {
     console.error('Error reading freeride_data.json:', error);
@@ -226,6 +228,9 @@ export function saveActivity(activity: StoredActivity): void {
     } else {
       activities.unshift(activity);
     }
+
+    // Always sort by start_time descending (newest first)
+    activities.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
     fs.writeFileSync(file, JSON.stringify(activities, null, 2), 'utf-8');
   } catch (error) {
