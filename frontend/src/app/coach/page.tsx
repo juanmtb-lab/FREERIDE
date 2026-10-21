@@ -2,7 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { CoachResponse, RiderFitnessMetrics } from "@/lib/n8n_coach";
-import { BrainCircuit, Calendar, RefreshCw, Zap, ShieldCheck, MessageSquare, Send, Workflow, Flame, Activity, Sparkles, CheckCircle2, ChevronRight } from "lucide-react";
+import { getGarminAuthHeaders } from "@/lib/api";
+import {
+  BrainCircuit,
+  Calendar,
+  RefreshCw,
+  Zap,
+  ShieldCheck,
+  MessageSquare,
+  Send,
+  Workflow,
+  Flame,
+  Activity,
+  Sparkles
+} from "lucide-react";
 import N8nConfigModal from "@/components/coach/N8nConfigModal";
 
 export default function CoachPage() {
@@ -10,15 +23,19 @@ export default function CoachPage() {
   const [loading, setLoading] = useState(false);
   const [isN8nModalOpen, setIsN8nModalOpen] = useState(false);
 
-  // Interactive AI Coach Chat State
   const [userQuery, setUserQuery] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
-  const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'coach'; text: string; time: string }[]>([]);
+  const [chatMessages, setChatMessages] = useState<{ role: "user" | "coach"; text: string; time: string }[]>([]);
 
   const loadCoachData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/coach/plan");
+      const res = await fetch("/api/v1/coach/plan", {
+        cache: "no-store",
+        headers: {
+          ...getGarminAuthHeaders()
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setCoachData(data);
@@ -41,25 +58,31 @@ export default function CoachPage() {
     const queryText = userQuery;
     setUserQuery("");
 
-    const nowStr = new Date().toLocaleTimeString("es-ES", { hour: '2-digit', minute: '2-digit' });
-    setChatMessages(prev => [...prev, { role: 'user', text: queryText, time: nowStr }]);
+    const nowStr = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    setChatMessages((prev) => [...prev, { role: "user", text: queryText, time: nowStr }]);
     setChatLoading(true);
 
     try {
       const res = await fetch("/api/v1/coach/plan", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getGarminAuthHeaders()
+        },
         body: JSON.stringify({ query: queryText })
       });
 
       if (res.ok) {
         const data: CoachResponse = await res.json();
         setCoachData(data);
-        setChatMessages(prev => [...prev, {
-          role: 'coach',
-          text: data.content_es,
-          time: new Date().toLocaleTimeString("es-ES", { hour: '2-digit', minute: '2-digit' })
-        }]);
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            role: "coach",
+            text: data.content_es,
+            time: new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
+          }
+        ]);
       }
     } catch (err) {
       console.error(err);
@@ -69,15 +92,15 @@ export default function CoachPage() {
   };
 
   const metrics: RiderFitnessMetrics = coachData?.metrics || {
-    ctl: 45,
-    atl: 38,
-    tsb: 7,
-    formStatus: "Carga Productiva - Balance Óptimo",
+    ctl: 0,
+    atl: 0,
+    tsb: 0,
+    formStatus: "Calculando carga de Garmin Connect...",
     formColor: "#06B6D4",
-    weeklyDistanceKm: 36.2,
-    weeklyElevGainM: 170,
-    avgHrLastRides: 138,
-    avgWattsLastRides: 195
+    weeklyDistanceKm: 0,
+    weeklyElevGainM: 0,
+    avgHrLastRides: 0,
+    avgWattsLastRides: 0
   };
 
   return (
@@ -93,10 +116,12 @@ export default function CoachPage() {
               <div className="flex items-center space-x-2">
                 <h1 className="text-xl sm:text-2xl font-extrabold text-white">Entrenador Personal AI FREERIDE</h1>
                 <span className="bg-orange-500/20 text-orange-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-orange-500/30">
-                  {coachData?.source === 'N8N_WORKFLOW' ? 'Engine: N8N Workflow' : 'Engine: Cycling Science AI'}
+                  {coachData?.source === "N8N_WORKFLOW" ? "Engine: N8N Workflow" : "Engine: Cycling Science AI"}
                 </span>
               </div>
-              <p className="text-xs text-dark-muted">Optimización fisiológica de carga (CTL / ATL / TSB) y seguimiento adaptativo</p>
+              <p className="text-xs text-dark-muted">
+                Optimización fisiológica de carga (CTL / ATL / TSB) y seguimiento adaptativo
+              </p>
             </div>
           </div>
 
@@ -110,46 +135,56 @@ export default function CoachPage() {
         </div>
 
         <p className="text-xs sm:text-sm text-dark-muted max-w-3xl leading-relaxed">
-          Tu entrenador personal analiza en tiempo real la telemetría de tu <strong className="text-white">Garmin Edge 130</strong> y tus rutas de <strong className="text-white">Strava Premium</strong>. Calcula tu fatiga acumulada, previene lesiones por sobrentrenamiento y diseña entrenamientos específicos para tus salidas de Carretera y MTB.
+          Tu entrenador personal analiza directamente la telemetría real sincronizada desde{" "}
+          <strong className="text-white">Garmin Connect (Garmin Edge 130)</strong>. Calcula tu fatiga acumulada,
+          previene lesiones por sobrentrenamiento y diseña entrenamientos específicos para tus salidas de Carretera y MTB.
         </p>
       </div>
 
       {/* 2. Physiological Fitness & Load Dashboard (CTL / ATL / TSB) */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Fitness CTL */}
         <div className="glass-panel p-5 rounded-2xl border border-dark-border space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-dark-muted font-medium">Estado de Forma (CTL)</span>
             <Activity className="w-4 h-4 text-emerald-400" />
           </div>
-          <p className="text-2xl font-extrabold text-white">{metrics.ctl} <span className="text-xs text-dark-muted font-normal">TSS</span></p>
+          <p className="text-2xl font-extrabold text-white">
+            {metrics.ctl} <span className="text-xs text-dark-muted font-normal">TSS</span>
+          </p>
           <div className="w-full bg-dark-bg h-1.5 rounded-full overflow-hidden">
-            <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${Math.min(100, (metrics.ctl / 80) * 100)}%` }}></div>
+            <div
+              className="bg-emerald-500 h-full rounded-full"
+              style={{ width: `${Math.min(100, (metrics.ctl / 80) * 100)}%` }}
+            ></div>
           </div>
           <p className="text-[10px] text-dark-muted">Carga Crónica de 42 días</p>
         </div>
 
-        {/* Fatigue ATL */}
         <div className="glass-panel p-5 rounded-2xl border border-dark-border space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-dark-muted font-medium">Fatiga Acumulada (ATL)</span>
             <Flame className="w-4 h-4 text-amber-400" />
           </div>
-          <p className="text-2xl font-extrabold text-white">{metrics.atl} <span className="text-xs text-dark-muted font-normal">TSS</span></p>
+          <p className="text-2xl font-extrabold text-white">
+            {metrics.atl} <span className="text-xs text-dark-muted font-normal">TSS</span>
+          </p>
           <div className="w-full bg-dark-bg h-1.5 rounded-full overflow-hidden">
-            <div className="bg-amber-500 h-full rounded-full" style={{ width: `${Math.min(100, (metrics.atl / 80) * 100)}%` }}></div>
+            <div
+              className="bg-amber-500 h-full rounded-full"
+              style={{ width: `${Math.min(100, (metrics.atl / 80) * 100)}%` }}
+            ></div>
           </div>
           <p className="text-[10px] text-dark-muted">Carga Aguda de 7 días</p>
         </div>
 
-        {/* Form TSB */}
         <div className="glass-panel p-5 rounded-2xl border border-dark-border space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-dark-muted font-medium">Frescura / Form (TSB)</span>
             <Zap className="w-4 h-4 text-cyan-400" />
           </div>
           <p className="text-2xl font-extrabold text-white">
-            {metrics.tsb > 0 ? `+${metrics.tsb}` : metrics.tsb} <span className="text-xs text-dark-muted font-normal">TSS</span>
+            {metrics.tsb > 0 ? `+${metrics.tsb}` : metrics.tsb}{" "}
+            <span className="text-xs text-dark-muted font-normal">TSS</span>
           </p>
           <p className="text-[11px] font-bold truncate" style={{ color: metrics.formColor }}>
             {metrics.formStatus}
@@ -157,15 +192,18 @@ export default function CoachPage() {
           <p className="text-[10px] text-dark-muted">CTL - ATL Balance</p>
         </div>
 
-        {/* Weekly Volume */}
         <div className="glass-panel p-5 rounded-2xl border border-dark-border space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-dark-muted font-medium">Volumen Semanal</span>
             <Calendar className="w-4 h-4 text-orange-400" />
           </div>
-          <p className="text-2xl font-extrabold text-white">{metrics.weeklyDistanceKm} <span className="text-xs text-dark-muted font-normal">km</span></p>
+          <p className="text-2xl font-extrabold text-white">
+            {metrics.weeklyDistanceKm} <span className="text-xs text-dark-muted font-normal">km</span>
+          </p>
           <p className="text-[11px] text-emerald-400 font-medium">+{metrics.weeklyElevGainM} m desnivel</p>
-          <p className="text-[10px] text-dark-muted">Media HR: {metrics.avgHrLastRides} ppm</p>
+          <p className="text-[10px] text-dark-muted">
+            Media HR: {metrics.avgHrLastRides > 0 ? `${metrics.avgHrLastRides} bpm` : "--"}
+          </p>
         </div>
       </div>
 
@@ -178,7 +216,9 @@ export default function CoachPage() {
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold text-white">Consultar a tu Entrenador AI</h2>
-              <p className="text-xs text-dark-muted">Hazle cualquier pregunta sobre tu ritmo, alimentación o entrenamiento de hoy</p>
+              <p className="text-xs text-dark-muted">
+                Hazle cualquier pregunta sobre tu ritmo, alimentación o entrenamiento de hoy
+              </p>
             </div>
           </div>
 
@@ -192,9 +232,7 @@ export default function CoachPage() {
           </button>
         </div>
 
-        {/* Chat Conversation History */}
         <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-          {/* Initial Diagnosis */}
           {coachData && (
             <div className="bg-dark-bg/80 p-5 rounded-2xl border border-dark-border space-y-2">
               <div className="flex items-center space-x-2 text-xs text-orange-400 font-bold">
@@ -207,18 +245,17 @@ export default function CoachPage() {
             </div>
           )}
 
-          {/* Interactive Chat Messages */}
           {chatMessages.map((msg, idx) => (
             <div
               key={idx}
               className={`p-4 rounded-2xl text-xs sm:text-sm max-w-3xl space-y-1 ${
-                msg.role === 'user'
+                msg.role === "user"
                   ? "bg-orange-600/20 border border-orange-500/30 text-white ml-auto"
                   : "bg-dark-bg/90 border border-dark-border text-dark-text mr-auto"
               }`}
             >
               <div className="flex items-center justify-between text-[10px] text-dark-muted mb-1">
-                <span className="font-bold">{msg.role === 'user' ? "Tú" : "Entrenador AI FREERIDE"}</span>
+                <span className="font-bold">{msg.role === "user" ? "Tú" : "Entrenador AI FREERIDE"}</span>
                 <span>{msg.time}</span>
               </div>
               <div className="whitespace-pre-line leading-relaxed">{msg.text}</div>
@@ -228,12 +265,11 @@ export default function CoachPage() {
           {chatLoading && (
             <div className="p-4 bg-dark-bg/90 rounded-2xl border border-dark-border text-xs text-orange-400 flex items-center space-x-2 animate-pulse">
               <RefreshCw className="w-4 h-4 animate-spin" />
-              <span>El Entrenador AI está procesando tus datos telemetricos y preparando tu respuesta...</span>
+              <span>El Entrenador AI está procesando tus datos de Garmin Connect y preparando tu respuesta...</span>
             </div>
           )}
         </div>
 
-        {/* Input Query Form */}
         <form onSubmit={handleAskCoach} className="flex items-center space-x-3 pt-2">
           <input
             type="text"
@@ -263,7 +299,9 @@ export default function CoachPage() {
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold text-white">Microciclo Adaptativo de 7 Días</h2>
-              <p className="text-xs text-dark-muted">Programación personalizada en función de tu balance de frescura (TSB)</p>
+              <p className="text-xs text-dark-muted">
+                Programación personalizada en función de tu balance de frescura (TSB)
+              </p>
             </div>
           </div>
 
@@ -274,27 +312,41 @@ export default function CoachPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {coachData?.weekly_plan?.map((workout, idx) => (
-            <div key={idx} className="bg-dark-bg/60 p-4 rounded-2xl border border-dark-border space-y-3 hover:border-orange-500/40 transition group">
+            <div
+              key={idx}
+              className="bg-dark-bg/60 p-4 rounded-2xl border border-dark-border space-y-3 hover:border-orange-500/40 transition group"
+            >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-extrabold text-orange-400 uppercase tracking-wider">{workout.day}</span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                  workout.intensity === 'Descanso' ? 'bg-dark-border text-dark-muted' :
-                  workout.intensity === 'Baja' ? 'bg-blue-500/20 text-blue-400' :
-                  workout.intensity === 'Media' ? 'bg-emerald-500/20 text-emerald-400' :
-                  workout.intensity === 'Alta' ? 'bg-amber-500/20 text-amber-400' : 'bg-rose-500/20 text-rose-400'
-                }`}>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                    workout.intensity === "Descanso"
+                      ? "bg-dark-border text-dark-muted"
+                      : workout.intensity === "Baja"
+                      ? "bg-blue-500/20 text-blue-400"
+                      : workout.intensity === "Media"
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : workout.intensity === "Alta"
+                      ? "bg-amber-500/20 text-amber-400"
+                      : "bg-rose-500/20 text-rose-400"
+                  }`}
+                >
                   {workout.intensity}
                 </span>
               </div>
 
               <div>
-                <h3 className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors">{workout.title}</h3>
+                <h3 className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors">
+                  {workout.title}
+                </h3>
                 <p className="text-xs text-dark-muted mt-1 leading-relaxed">{workout.description}</p>
               </div>
 
               <div className="pt-2 border-t border-dark-border/60 flex items-center justify-between text-[11px]">
                 <span className="text-dark-muted font-medium">{workout.target_hr_zone}</span>
-                <span className="font-bold text-white">{workout.duration_min > 0 ? `${workout.duration_min} min` : "Descanso"}</span>
+                <span className="font-bold text-white">
+                  {workout.duration_min > 0 ? `${workout.duration_min} min` : "Descanso"}
+                </span>
               </div>
             </div>
           ))}

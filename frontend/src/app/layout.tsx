@@ -5,14 +5,14 @@ import MobileNav from "@/components/layout/MobileNav";
 import type { Viewport } from "next";
 
 export const metadata = {
-  title: "FREERIDE - Telemetría & Entrenador AI",
-  description: "App de telemetría de ciclismo Garmin Edge 130, visualización 3D y entrenador AI",
+  title: "FREERIDE - Telemetría Garmin Connect & Entrenador AI",
+  description: "App de telemetría de ciclismo conectada a Garmin Connect y Entrenador Personal AI",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "FREERIDE",
-  },
+    title: "FREERIDE"
+  }
 };
 
 export const viewport: Viewport = {
@@ -20,11 +20,11 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false,
+  userScalable: false
 };
 
 export default function RootLayout({
-  children,
+  children
 }: {
   children: React.ReactNode;
 }) {

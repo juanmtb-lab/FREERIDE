@@ -1,26 +1,33 @@
 import { NextResponse } from 'next/server';
-import { getActivityById } from '@/lib/storage';
-import { syncGarminActivitiesLive } from '@/lib/garmin_live';
+import { deleteActivityById } from '@/lib/storage';
+import { fetchGarminActivityTelemetry } from '@/lib/garmin_live';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  let activity = getActivityById(params.id);
-
-  if (!activity) {
-    try {
-      // Trigger live sync to fetch activity from Garmin Connect API
-      await syncGarminActivitiesLive();
-      activity = getActivityById(params.id);
-    } catch (err) {
-      console.error('Error live syncing for activity detail:', err);
+  try {
+    const activity = await fetchGarminActivityTelemetry(params.id, request);
+    if (!activity) {
+      return NextResponse.json({ detail: 'Actividad no encontrada' }, { status: 404 });
     }
+    return NextResponse.json(activity);
+  } catch (error: any) {
+    console.error(`Error fetching activity detail ${params.id}:`, error);
+    return NextResponse.json(
+      { detail: error.message || 'Error al obtener los detalles de la actividad' },
+      { status: 500 }
+    );
   }
+}
 
-  if (!activity) {
-    return NextResponse.json({ detail: 'Actividad no encontrada' }, { status: 404 });
-  }
-
-  return NextResponse.json(activity);
+export async function DELETE(
+  _request: Request,
+  { params }: { params: { id: string } }
+) {
+  const deleted = deleteActivityById(params.id);
+  return NextResponse.json({ deleted, id: params.id });
 }

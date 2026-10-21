@@ -24,7 +24,7 @@ export interface StoredActivity {
   title: string;
   description?: string;
   activity_type: 'ROAD_BIKE' | 'MOUNTAIN_BIKE' | 'GRAVEL' | 'UNKNOWN';
-  file_type: 'FIT' | 'GPX';
+  file_type: 'FIT' | 'GPX' | 'TCX';
   start_time: string;
   total_elapsed_time_sec: number;
   moving_time_sec: number;
@@ -46,17 +46,10 @@ export interface StoredActivity {
   summary_polyline?: string;
   created_at: string;
   telemetry_points: any[];
-  // Strava integration fields (Unified single activity)
-  strava_id?: string;
-  strava_url?: string;
-  suffer_score?: number;
-  segment_efforts?: any[];
 }
 
 export interface FreerideSettings {
   n8n_webhook_url?: string;
-  strava_access_token?: string;
-  strava_athlete_id?: string;
   rider_weight_kg?: number;
   rider_max_hr?: number;
   rider_ftp?: number;
@@ -73,7 +66,6 @@ export function getStoredActivities(): StoredActivity[] {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    // Always return sorted newest first by start_time
     parsed.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
     return parsed;
   } catch (error) {
@@ -82,60 +74,67 @@ export function getStoredActivities(): StoredActivity[] {
   }
 }
 
-// Single Unified Activity Merging Engine (Garmin + Strava without duplicates)
-export function saveActivity(activity: StoredActivity): void {
+export function saveActivity(activity: StoredActivity): StoredActivity {
   try {
     const file = getDataFilePath();
     const activities = getStoredActivities();
 
-    const actTime = new Date(activity.start_time).getTime();
+    const existingIndex = activities.findIndex(existing => String(existing.id) === String(activity.id));
 
-    // Check if an activity matching the same start time (within 5 minutes) already exists
-    const duplicateIndex = activities.findIndex(existing => {
-      if (existing.id === activity.id) return true;
-      if (existing.strava_id && activity.strava_id && existing.strava_id === activity.strava_id) return true;
-      
-      const existingTime = new Date(existing.start_time).getTime();
-      const timeDiffMs = Math.abs(existingTime - actTime);
-      const distDiffPct = Math.abs(existing.total_distance_m - activity.total_distance_m) / Math.max(1, existing.total_distance_m);
+    let finalActivity = activity;
 
-      return timeDiffMs < 5 * 60 * 1000 && distDiffPct < 0.08;
-    });
-
-    if (duplicateIndex !== -1) {
-      // Merge Strava / Garmin metadata into the existing single activity
-      const existing = activities[duplicateIndex];
-      const merged: StoredActivity = {
+    if (existingIndex !== -1) {
+      const existing = activities[existingIndex];
+      finalActivity = {
         ...existing,
         ...activity,
-        // Keep telemetry points if new activity has them
-        telemetry_points: activity.telemetry_points?.length ? activity.telemetry_points : existing.telemetry_points,
-        // Merge Strava fields
-        strava_id: activity.strava_id || existing.strava_id,
-        strava_url: activity.strava_url || existing.strava_url,
-        suffer_score: activity.suffer_score || existing.suffer_score,
-        segment_efforts: activity.segment_efforts || existing.segment_efforts
+        // Preserve already-downloaded real telemetry points & HR zones if new summary doesn't include them
+        telemetry_points:
+          activity.telemetry_points && activity.telemetry_points.length > 0
+            ? activity.telemetry_points
+            : existing.telemetry_points || [],
+        hr_zone_distribution:
+          activity.hr_zone_distribution && Object.keys(activity.hr_zone_distribution).length > 0
+            ? activity.hr_zone_distribution
+            : existing.hr_zone_distribution,
+        avg_watts_est: activity.avg_watts_est ?? existing.avg_watts_est,
+        max_watts_est: activity.max_watts_est ?? existing.max_watts_est,
+        normalized_power: activity.normalized_power ?? existing.normalized_power,
+        max_cadence: activity.max_cadence ?? existing.max_cadence,
+        cadence_distribution: activity.cadence_distribution ?? existing.cadence_distribution,
       };
-      activities[duplicateIndex] = merged;
+      activities[existingIndex] = finalActivity;
     } else {
-      activities.unshift(activity);
+      activities.unshift(finalActivity);
     }
 
-    // Always sort by start_time descending (newest first)
     activities.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
-
     fs.writeFileSync(file, JSON.stringify(activities, null, 2), 'utf-8');
+    return finalActivity;
   } catch (error) {
     console.error('Error saving activity:', error);
+    return activity;
   }
 }
 
 export function getActivityById(id: string): StoredActivity | null {
   const activities = getStoredActivities();
-  return activities.find(a => a.id === id || a.strava_id === id) || null;
+  return activities.find(a => String(a.id) === String(id)) || null;
 }
 
-// Settings storage for N8N Webhook & Strava Token
+export function deleteActivityById(id: string): boolean {
+  try {
+    const file = getDataFilePath();
+    const activities = getStoredActivities();
+    const filtered = activities.filter(a => String(a.id) !== String(id));
+    fs.writeFileSync(file, JSON.stringify(filtered, null, 2), 'utf-8');
+    return filtered.length < activities.length;
+  } catch (error) {
+    console.error('Error deleting activity:', error);
+    return false;
+  }
+}
+
 export function getSettings(): FreerideSettings {
   try {
     const file = getSettingsFilePath();

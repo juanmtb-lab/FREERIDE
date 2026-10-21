@@ -3,20 +3,21 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ActivityDetail, AIInsight } from "@/types/telemetry";
-import { fetchActivityDetail, fetchActivityCoachInsight, deleteActivity } from "@/lib/api";
+import {
+  fetchActivityDetail,
+  fetchActivityCoachInsight,
+  deleteActivity,
+  getGarminAuthHeaders
+} from "@/lib/api";
 import { formatDistance, formatElevation, formatTime, formatSpeed, formatWatts } from "@/lib/utils";
 import TelemetryCharts from "@/components/charts/TelemetryCharts";
 import {
-  Bike,
-  Mountain,
-  Gauge,
-  Flame,
-  Zap,
   Activity as HRIcon,
   BrainCircuit,
   Trash2,
   ArrowLeft,
-  Calendar
+  Calendar,
+  RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 
@@ -28,23 +29,56 @@ export default function ActivityDetailPage() {
   const [activity, setActivity] = useState<ActivityDetail | null>(null);
   const [insight, setInsight] = useState<AIInsight | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshingTelemetry, setRefreshingTelemetry] = useState(false);
   const [loadingInsight, setLoadingInsight] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [, setActiveIndex] = useState(0);
+
+  const handleRefreshTelemetry = async () => {
+    if (!activityId) return;
+    setRefreshingTelemetry(true);
+    try {
+      const res = await fetch(`/api/v1/activities/${activityId}`, {
+        cache: "no-store",
+        headers: {
+          ...getGarminAuthHeaders()
+        }
+      });
+      if (res.ok) {
+        const fresh = await res.json();
+        if (fresh && fresh.id) {
+          setActivity(fresh);
+          if (typeof window !== "undefined" && Array.isArray(fresh.telemetry_points) && fresh.telemetry_points.length > 0) {
+            try {
+              localStorage.setItem(`freeride_activity_detail_${activityId}`, JSON.stringify(fresh));
+            } catch {}
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error refreshing telemetry:", e);
+    } finally {
+      setRefreshingTelemetry(false);
+    }
+  };
 
   useEffect(() => {
     if (activityId) {
       fetchActivityDetail(activityId).then((data) => {
         setActivity(data);
         setLoading(false);
+        // If loaded from summary fallback without telemetry points, fetch real telemetry from Garmin immediately
+        if (data && (!data.telemetry_points || data.telemetry_points.length === 0)) {
+          handleRefreshTelemetry();
+        }
       });
     }
   }, [activityId]);
 
   const handleGenerateInsight = async () => {
-    if (!activityId) return;
+    if (!activityId || !activity) return;
     setLoadingInsight(true);
     try {
-      const data = await fetchActivityCoachInsight(activityId);
+      const data = await fetchActivityCoachInsight(activityId, activity);
       setInsight(data);
     } catch (e) {
       console.error(e);
@@ -62,8 +96,9 @@ export default function ActivityDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto p-12 text-center text-dark-muted glass-panel rounded-3xl">
-        Cargando telemetría real de Garmin...
+      <div className="max-w-7xl mx-auto p-12 text-center text-dark-muted glass-panel rounded-3xl flex flex-col items-center justify-center space-y-3">
+        <RefreshCw className="w-6 h-6 animate-spin text-orange-400" />
+        <span>Descargando telemetría y gráficas reales de Garmin Connect...</span>
       </div>
     );
   }
@@ -79,7 +114,8 @@ export default function ActivityDetailPage() {
     );
   }
 
-  const isMTB = activity.activity_type === 'MOUNTAIN_BIKE';
+  const isMTB = activity.activity_type === "MOUNTAIN_BIKE";
+  const powerVal = activity.normalized_power || activity.avg_watts_est;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -93,37 +129,45 @@ export default function ActivityDetailPage() {
           <span>Volver al Panel</span>
         </Link>
 
-        <button
-          onClick={handleDelete}
-          className="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition"
-          title="Eliminar actividad"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleRefreshTelemetry}
+            disabled={refreshingTelemetry}
+            className="px-3 py-1.5 rounded-xl bg-dark-card border border-dark-border text-xs text-cyan-400 hover:text-white flex items-center space-x-1.5 transition disabled:opacity-50"
+            title="Volver a descargar gráficas originales de Garmin Connect"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshingTelemetry ? "animate-spin" : ""}`} />
+            <span>Actualizar Gráficas Garmin</span>
+          </button>
+
+          <button
+            onClick={handleDelete}
+            className="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition"
+            title="Eliminar actividad"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Activity Summary Title Banner */}
       <div className="glass-panel p-6 md:p-8 rounded-3xl space-y-4 border border-dark-border">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-2">
-            <div className="flex items-center space-x-3">
-              <span className={`px-3 py-1 rounded-full text-xs font-extrabold ${
-                isMTB
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                  : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-              }`}>
-                {isMTB ? 'MOUNTAIN BIKE' : 'CARRETERA'}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-extrabold ${
+                  isMTB
+                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                    : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                }`}
+              >
+                {isMTB ? "MOUNTAIN BIKE" : "CARRETERA"}
               </span>
-
-              {isMTB && (
-                <span className="text-xs text-amber-400 font-semibold bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
-                  Técnico MTB: {activity.mtb_technical_score}/10
-                </span>
-              )}
 
               <span className="text-xs text-dark-muted flex items-center space-x-1">
                 <Calendar className="w-3.5 h-3.5" />
-                <span>{new Date(activity.start_time).toLocaleString('es-ES')}</span>
+                <span>{new Date(activity.start_time).toLocaleString("es-ES")}</span>
               </span>
             </div>
 
@@ -149,19 +193,30 @@ export default function ActivityDetailPage() {
           </div>
 
           <div>
-            <p className="text-[11px] text-dark-muted font-medium">Velocidad Media</p>
-            <p className="text-xl font-bold text-cyan-400">{formatSpeed(activity.avg_speed_kmh)}</p>
+            <p className="text-[11px] text-dark-muted font-medium">Velocidad Media / Máx</p>
+            <p className="text-xl font-bold text-cyan-400">
+              {activity.avg_speed_kmh} <span className="text-xs text-dark-muted">/ {activity.max_speed_kmh} km/h</span>
+            </p>
           </div>
 
           <div>
-            <p className="text-[11px] text-dark-muted font-medium">Potencia Estimada</p>
-            <p className="text-xl font-bold text-amber-400">{formatWatts(activity.normalized_power || activity.avg_watts_est || 200)}</p>
+            <p className="text-[11px] text-dark-muted font-medium">
+              {activity.avg_cadence ? "Cadencia Media" : "Potencia Estimada"}
+            </p>
+            <p className="text-xl font-bold text-amber-400">
+              {activity.avg_cadence
+                ? `${activity.avg_cadence} rpm`
+                : powerVal
+                ? formatWatts(powerVal)
+                : "--"}
+            </p>
           </div>
 
           <div>
             <p className="text-[11px] text-dark-muted font-medium">Pulsaciones Med / Máx</p>
             <p className="text-xl font-bold text-rose-400">
-              {activity.avg_hr ? `${activity.avg_hr} / ${activity.max_hr || '--'}` : '-- / --'} <span className="text-xs">bpm</span>
+              {activity.avg_hr ? `${activity.avg_hr} / ${activity.max_hr || "--"}` : "-- / --"}{" "}
+              <span className="text-xs">bpm</span>
             </p>
           </div>
         </div>
@@ -177,6 +232,7 @@ export default function ActivityDetailPage() {
           points={activity.telemetry_points}
           hrZones={activity.hr_zone_distribution}
           totalDistanceM={activity.total_distance_m}
+          movingTimeSec={activity.moving_time_sec}
           elevationGainM={activity.elevation_gain_m}
           avgSpeedKmh={activity.avg_speed_kmh}
           maxSpeedKmh={activity.max_speed_kmh}
@@ -185,12 +241,14 @@ export default function ActivityDetailPage() {
           avgCadence={activity.avg_cadence}
           avgWattsEst={activity.avg_watts_est}
           onPointHover={(idx) => setActiveIndex(idx)}
+          onRefreshTelemetry={handleRefreshTelemetry}
+          refreshingTelemetry={refreshingTelemetry}
         />
       </div>
 
       {/* Spanish AI Coach Insight Box */}
-      <div className="glass-panel p-8 rounded-3xl border border-orange-500/30 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-orange-500/30 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-xl font-bold text-white flex items-center space-x-3">
             <BrainCircuit className="w-6 h-6 text-orange-400" />
             <span>Análisis Fisiológico Entrenador AI FREERIDE</span>
@@ -211,7 +269,7 @@ export default function ActivityDetailPage() {
           </div>
         ) : (
           <div className="text-center py-6 text-dark-muted text-xs">
-            Haz clic en "Generar Análisis AI" para obtener feedback fisiológico real de tu salida en español.
+            Haz clic en &quot;Generar Análisis AI&quot; para obtener feedback fisiológico real de tu salida en español.
           </div>
         )}
       </div>

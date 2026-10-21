@@ -4,24 +4,38 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bike, UploadCloud, RefreshCw, LogOut, CheckCircle2, BrainCircuit } from "lucide-react";
 import GarminSyncModal from "@/components/garmin/GarminSyncModal";
-import StravaSyncModal from "@/components/strava/StravaSyncModal";
+import { getGarminAuthHeaders, saveGarminAuthClient, clearGarminAuthClient } from "@/lib/api";
 
 export default function Navbar() {
   const [isGarminModalOpen, setIsGarminModalOpen] = useState(false);
-  const [isStravaModalOpen, setIsStravaModalOpen] = useState(false);
   const [session, setSession] = useState<{ connected: boolean; email?: string } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const checkSession = async () => {
     try {
-      const res = await fetch("/api/v1/garmin/session");
+      const res = await fetch("/api/v1/garmin/session", {
+        cache: "no-store",
+        headers: {
+          ...getGarminAuthHeaders()
+        }
+      });
       if (res.ok) {
         const data = await res.json();
-        setSession(data);
+        if (data.connected) {
+          setSession(data);
+          return;
+        }
       }
     } catch (e) {
       console.error(e);
+    }
+
+    if (typeof window !== "undefined") {
+      const cachedEmail = localStorage.getItem("freeride_garmin_email");
+      if (cachedEmail) {
+        setSession({ connected: true, email: cachedEmail });
+      }
     }
   };
 
@@ -35,18 +49,29 @@ export default function Navbar() {
     try {
       const res = await fetch("/api/v1/garmin/sync", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getGarminAuthHeaders()
+        },
         body: JSON.stringify({})
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.detail || "Error en la sincronización");
       }
+      if (data.garmin_auth) {
+        saveGarminAuthClient(data.garmin_auth, data.email);
+      }
+      if (data.activities && Array.isArray(data.activities)) {
+        try {
+          localStorage.setItem("freeride_cached_activities", JSON.stringify(data.activities));
+        } catch {}
+      }
       setSyncMessage(`¡Sincronizado! (${data.synced_count || 0} rutas)`);
       setTimeout(() => {
         window.location.reload();
-      }, 1500);
-    } catch (err: any) {
+      }, 1200);
+    } catch {
       setIsGarminModalOpen(true);
     } finally {
       setSyncing(false);
@@ -56,6 +81,7 @@ export default function Navbar() {
   const handleLogoutGarmin = async () => {
     if (confirm("¿Desconectar cuenta de Garmin Connect?")) {
       await fetch("/api/v1/garmin/session", { method: "DELETE" });
+      clearGarminAuthClient();
       setSession({ connected: false });
     }
   };
@@ -68,7 +94,9 @@ export default function Navbar() {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center shadow-md shadow-orange-500/20">
             <Bike className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-base text-white tracking-wider group-hover:text-orange-400 transition-colors">FREERIDE</span>
+          <span className="font-bold text-base text-white tracking-wider group-hover:text-orange-400 transition-colors">
+            FREERIDE
+          </span>
         </Link>
 
         {/* AI Coach Banner Badge */}
@@ -77,27 +105,20 @@ export default function Navbar() {
           className="hidden md:flex items-center space-x-2 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/20 border border-orange-500/30 px-3.5 py-1.5 rounded-xl hover:border-orange-500/60 transition group"
         >
           <BrainCircuit className="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform" />
-          <span className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors">Entrenador AI Activo</span>
+          <span className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors">
+            Entrenador AI Activo
+          </span>
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-1"></span>
         </Link>
 
         {/* User Status & Quick Actions */}
         <div className="flex items-center space-x-2 sm:space-x-3">
-          <button
-            onClick={() => setIsStravaModalOpen(true)}
-            className="flex items-center space-x-1 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border border-orange-500/30 text-[11px] sm:text-xs px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl transition"
-            title="Conectar o fusionar con Strava Premium"
-          >
-            <span className="font-black text-xs">S</span>
-            <span className="hidden sm:inline">Strava Premium</span>
-          </button>
-
           {session?.connected ? (
             <div className="flex items-center space-x-1.5 sm:space-x-2 bg-dark-bg/80 border border-emerald-500/30 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl">
               <span className="flex items-center space-x-1 text-[11px] sm:text-xs text-emerald-400 font-semibold">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span className="hidden sm:inline">Garmin:</span>
-                <span className="text-white max-w-[90px] sm:max-w-[120px] truncate">{session.email}</span>
+                <span className="text-white max-w-[110px] sm:max-w-[150px] truncate">{session.email}</span>
               </span>
 
               <button
@@ -150,14 +171,6 @@ export default function Navbar() {
         onClose={() => setIsGarminModalOpen(false)}
         onSuccess={() => {
           checkSession();
-          window.location.reload();
-        }}
-      />
-
-      <StravaSyncModal
-        isOpen={isStravaModalOpen}
-        onClose={() => setIsStravaModalOpen(false)}
-        onSuccess={() => {
           window.location.reload();
         }}
       />

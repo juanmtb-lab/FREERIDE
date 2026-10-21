@@ -3,9 +3,20 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ActivitySummary } from "@/types/telemetry";
-import { fetchActivities } from "@/lib/api";
+import { fetchActivities, getGarminAuthHeaders, saveGarminAuthClient } from "@/lib/api";
 import { formatDistance, formatElevation, formatTime, formatSpeed } from "@/lib/utils";
-import { Bike, Mountain, Gauge, Flame, ArrowRight, UploadCloud, BrainCircuit, Activity as ActivityIcon, RefreshCw, CheckCircle2 } from "lucide-react";
+import {
+  Bike,
+  Mountain,
+  Gauge,
+  Flame,
+  ArrowRight,
+  UploadCloud,
+  BrainCircuit,
+  Activity as ActivityIcon,
+  RefreshCw,
+  CheckCircle2
+} from "lucide-react";
 import GarminSyncModal from "@/components/garmin/GarminSyncModal";
 
 export default function Dashboard() {
@@ -16,8 +27,7 @@ export default function Dashboard() {
   const [syncing, setSyncing] = useState(false);
 
   const loadData = () => {
-    // 1. Instantly load from localStorage if available
-    const local = localStorage.getItem('freeride_cached_activities');
+    const local = localStorage.getItem("freeride_cached_activities");
     if (local) {
       try {
         const parsed = JSON.parse(local);
@@ -28,20 +38,35 @@ export default function Dashboard() {
       } catch {}
     }
 
-    // 2. Fetch latest from API & sync to localStorage
     fetchActivities()
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setActivities(data);
-          localStorage.setItem('freeride_cached_activities', JSON.stringify(data));
+          localStorage.setItem("freeride_cached_activities", JSON.stringify(data));
         }
         setLoading(false);
       })
       .catch(() => setLoading(false));
 
-    fetch("/api/v1/garmin/session")
+    fetch("/api/v1/garmin/session", {
+      cache: "no-store",
+      headers: {
+        ...getGarminAuthHeaders()
+      }
+    })
       .then((r) => r.json())
-      .then((data) => setGarminSession(data))
+      .then((data) => {
+        if (data.connected) {
+          setGarminSession(data);
+        } else {
+          const cachedEmail = localStorage.getItem("freeride_garmin_email");
+          if (cachedEmail) {
+            setGarminSession({ connected: true, email: cachedEmail });
+          } else {
+            setGarminSession({ connected: false });
+          }
+        }
+      })
       .catch((e) => console.error(e));
   };
 
@@ -54,13 +79,23 @@ export default function Dashboard() {
     try {
       const res = await fetch("/api/v1/garmin/sync", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getGarminAuthHeaders()
+        },
         body: JSON.stringify({})
       });
       const data = await res.json();
-      if (res.ok && data.activities && Array.isArray(data.activities) && data.activities.length > 0) {
+      if (!res.ok) {
+        setIsGarminModalOpen(true);
+        return;
+      }
+      if (data.garmin_auth) {
+        saveGarminAuthClient(data.garmin_auth, data.email);
+      }
+      if (data.activities && Array.isArray(data.activities) && data.activities.length > 0) {
         setActivities(data.activities);
-        localStorage.setItem('freeride_cached_activities', JSON.stringify(data.activities));
+        localStorage.setItem("freeride_cached_activities", JSON.stringify(data.activities));
       } else {
         loadData();
       }
@@ -74,8 +109,8 @@ export default function Dashboard() {
   const totalDistance = activities.reduce((acc, a) => acc + a.total_distance_m, 0);
   const totalElevation = activities.reduce((acc, a) => acc + a.elevation_gain_m, 0);
   const totalTime = activities.reduce((acc, a) => acc + a.moving_time_sec, 0);
-  const mtbCount = activities.filter(a => a.activity_type === 'MOUNTAIN_BIKE').length;
-  const roadCount = activities.filter(a => a.activity_type === 'ROAD_BIKE').length;
+  const mtbCount = activities.filter((a) => a.activity_type === "MOUNTAIN_BIKE").length;
+  const roadCount = activities.filter((a) => a.activity_type === "ROAD_BIKE").length;
 
   return (
     <div className="space-y-6 md:space-y-8 max-w-7xl mx-auto">
@@ -84,18 +119,18 @@ export default function Dashboard() {
         <div className="relative z-10 space-y-2">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-semibold">
             <Bike className="w-3.5 h-3.5" />
-            <span>FREERIDE App v1.0</span>
+            <span>FREERIDE · Garmin Connect Native</span>
           </div>
           <h1 className="text-xl sm:text-2xl md:text-4xl font-extrabold text-white tracking-tight">
             Panel de Telemetría & Entrenador AI
           </h1>
           <p className="text-xs sm:text-sm text-dark-muted max-w-2xl">
-            Análisis de rendimiento y planes de entrenamiento personalizados para tus salidas de Carretera y Mountain Bike (Garmin Edge 130).
+            Sincronización directa con Garmin Connect para analizar tus salidas reales de Carretera y Mountain Bike.
           </p>
         </div>
       </div>
 
-      {/* Metric Summary Cards (Responsive 2x2 grid on mobile) */}
+      {/* Metric Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
         <div className="glass-panel p-4 sm:p-5 rounded-2xl flex items-center space-x-3 sm:space-x-4">
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0">
@@ -168,7 +203,7 @@ export default function Dashboard() {
               <div className="space-y-1">
                 <h3 className="text-sm sm:text-base font-bold text-white">No hay actividades cargadas</h3>
                 <p className="text-xs text-dark-muted max-w-sm mx-auto">
-                  Haz clic en "Sincronizar Garmin Connect" para importar todas tus rutas reales desde el 5 de agosto en adelante.
+                  Haz clic en &quot;Sincronizar Garmin Connect&quot; para importar todas tus rutas reales desde Garmin Connect.
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -191,7 +226,7 @@ export default function Dashboard() {
           ) : (
             <div className="space-y-3">
               {activities.map((act) => {
-                const isMTB = act.activity_type === 'MOUNTAIN_BIKE';
+                const isMTB = act.activity_type === "MOUNTAIN_BIKE";
                 return (
                   <Link
                     key={act.id}
@@ -200,15 +235,21 @@ export default function Dashboard() {
                   >
                     <div className="space-y-1 w-full sm:w-auto">
                       <div className="flex items-center justify-between sm:justify-start space-x-3">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${
-                          isMTB 
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
-                            : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                        }`}>
-                          {isMTB ? 'MOUNTAIN BIKE' : 'CARRETERA'}
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${
+                            isMTB
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                              : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                          }`}
+                        >
+                          {isMTB ? "MOUNTAIN BIKE" : "CARRETERA"}
                         </span>
                         <span className="text-[11px] sm:text-xs text-dark-muted">
-                          {new Date(act.start_time).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {new Date(act.start_time).toLocaleDateString("es-ES", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric"
+                          })}
                         </span>
                       </div>
                       <h3 className="font-bold text-sm sm:text-base text-white group-hover:text-dark-accent transition">
@@ -216,7 +257,7 @@ export default function Dashboard() {
                       </h3>
                     </div>
 
-                    {/* Stats Pill (Responsive 3-column layout on mobile) */}
+                    {/* Stats Pill */}
                     <div className="w-full sm:w-auto grid grid-cols-3 sm:flex sm:items-center gap-2 sm:space-x-6 text-xs text-dark-muted pt-2 sm:pt-0 border-t border-dark-border/40 sm:border-t-0">
                       <div>
                         <p className="text-[9px] sm:text-[10px] uppercase font-semibold">Distancia</p>
@@ -257,8 +298,8 @@ export default function Dashboard() {
               </div>
               <p className="text-xs text-dark-muted leading-relaxed">
                 {garminSession?.connected
-                  ? `Sesión activa (${garminSession.email}). Haz clic para reflejar tus rutas reales desde el 5 de agosto.`
-                  : "Sincroniza tus salidas de Garmin Edge 130 de forma automática."}
+                  ? `Sesión activa (${garminSession.email}). Haz clic para sincronizar tus salidas reales de Garmin Connect.`
+                  : "Conecta tu cuenta de Garmin Connect para sincronizar tus salidas y gráficas."}
               </p>
             </div>
 
@@ -268,7 +309,13 @@ export default function Dashboard() {
               className="w-full inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-cyan-600/20 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
-              <span>{syncing ? "Sincronizando..." : garminSession?.connected ? "Refrescar y Buscar Rutas" : "Conectar Garmin Connect"}</span>
+              <span>
+                {syncing
+                  ? "Sincronizando..."
+                  : garminSession?.connected
+                  ? "Refrescar y Buscar Rutas"
+                  : "Conectar Garmin Connect"}
+              </span>
             </button>
           </div>
 
@@ -280,7 +327,7 @@ export default function Dashboard() {
                 <span>Entrenador AI FREERIDE</span>
               </h3>
               <p className="text-xs text-dark-muted leading-relaxed">
-                Planificación adaptativa basada en tu carga (CTL/ATL/TSB) y perfil fisiológico real.
+                Planificación adaptativa basada en tu carga (CTL/ATL/TSB) y perfil fisiológico real de Garmin Connect.
               </p>
             </div>
 

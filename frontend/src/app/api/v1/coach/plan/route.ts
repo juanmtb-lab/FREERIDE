@@ -1,25 +1,48 @@
 import { NextResponse } from 'next/server';
 import { queryAiCoach } from '@/lib/n8n_coach';
+import { getStoredActivities } from '@/lib/storage';
+import { syncGarminActivitiesLive } from '@/lib/garmin_live';
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export async function GET(request: Request) {
   try {
+    if (getStoredActivities().length === 0) {
+      try {
+        await syncGarminActivitiesLive({ request });
+      } catch {}
+    }
     const coachResponse = await queryAiCoach();
     return NextResponse.json(coachResponse);
   } catch (error: any) {
     console.error('Error generating AI Coach plan:', error);
-    return NextResponse.json({ detail: error.message || 'Error al conectar con el Entrenador AI' }, { status: 500 });
+    return NextResponse.json(
+      { detail: error.message || 'Error al conectar con el Entrenador AI' },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(request: Request) {
   try {
     let body: any = {};
-    try { body = await request.json(); } catch {}
+    try {
+      body = await request.json();
+    } catch {}
+    if (getStoredActivities().length === 0) {
+      try {
+        await syncGarminActivitiesLive({ request });
+      } catch {}
+    }
     const query = body.query;
     const coachResponse = await queryAiCoach(query);
     return NextResponse.json(coachResponse);
   } catch (error: any) {
     console.error('Error querying AI Coach:', error);
-    return NextResponse.json({ detail: error.message || 'Error al consultar al Entrenador AI' }, { status: 500 });
+    return NextResponse.json(
+      { detail: error.message || 'Error al consultar al Entrenador AI' },
+      { status: 500 }
+    );
   }
 }

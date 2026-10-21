@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getGarminSession, clearGarminSession } from '@/lib/garmin_session';
 
-export async function GET() {
-  const session = getGarminSession();
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export async function GET(request: Request) {
+  const session = getGarminSession(request);
   if (session && session.email) {
     return NextResponse.json({
       connected: true,

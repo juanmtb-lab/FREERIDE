@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, RefreshCw, Lock, Mail, AlertCircle, CheckCircle } from "lucide-react";
+import { saveGarminAuthClient } from "@/lib/api";
 
 interface GarminSyncModalProps {
   isOpen: boolean;
@@ -28,7 +29,7 @@ export default function GarminSyncModal({ isOpen, onClose, onSuccess }: GarminSy
       const res = await fetch("/api/v1/garmin/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password })
       });
 
       const data = await res.json();
@@ -37,11 +38,20 @@ export default function GarminSyncModal({ isOpen, onClose, onSuccess }: GarminSy
         throw new Error(data.detail || "Error al conectar con Garmin Connect");
       }
 
+      if (data.garmin_auth) {
+        saveGarminAuthClient(data.garmin_auth, data.email || email);
+      }
+      if (data.activities && Array.isArray(data.activities)) {
+        try {
+          localStorage.setItem("freeride_cached_activities", JSON.stringify(data.activities));
+        } catch {}
+      }
+
       setSuccessMsg(data.message || "¡Sincronización completada con éxito!");
       setTimeout(() => {
         if (onSuccess) onSuccess();
         onClose();
-      }, 1500);
+      }, 1200);
     } catch (err: any) {
       setError(err.message || "No se pudo conectar con Garmin Connect. Intenta de nuevo.");
     } finally {
@@ -65,7 +75,7 @@ export default function GarminSyncModal({ isOpen, onClose, onSuccess }: GarminSy
           </div>
           <div>
             <h3 className="text-lg font-bold text-white">Conectar Garmin Connect</h3>
-            <p className="text-xs text-dark-muted">Sincronización directa en la Nube</p>
+            <p className="text-xs text-dark-muted">Sincronización directa y oficial con tu cuenta Garmin</p>
           </div>
         </div>
 
@@ -121,7 +131,7 @@ export default function GarminSyncModal({ isOpen, onClose, onSuccess }: GarminSy
           <div className="p-3 rounded-xl bg-dark-bg/60 border border-dark-border text-[11px] text-dark-muted flex items-start space-x-2">
             <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
             <p>
-              Tus credenciales se procesan en tu propio servidor local FREERIDE de forma privada y nunca se comparten con terceros.
+              Tus tokens OAuth de Garmin se guardan de forma privada en tu dispositivo para mantener la conexión activa sin cortes.
             </p>
           </div>
 
