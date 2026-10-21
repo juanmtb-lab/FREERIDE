@@ -5,8 +5,8 @@ import MobileNav from "@/components/layout/MobileNav";
 import type { Viewport } from "next";
 
 export const metadata = {
-  title: "FREERIDE - Telemetría Garmin Connect & Entrenador AI",
-  description: "App de telemetría de ciclismo conectada a Garmin Connect y Entrenador Personal AI",
+  title: "FREERIDE - Telemetría Strava & Entrenador Personal AI",
+  description: "App de telemetría de ciclismo conectada a Strava API v3 y Entrenador Personal AI",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

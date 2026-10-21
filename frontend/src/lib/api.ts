@@ -1,44 +1,58 @@
 import { ActivitySummary, ActivityDetail, AIInsight } from "@/types/telemetry";
 
 const API_BASE = "/api/v1";
+const STRAVA_CACHE_KEY = "freeride_strava_activities_v4";
 
-export function getGarminAuthHeaders(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  try {
-    const auth = localStorage.getItem("freeride_garmin_auth");
-    if (auth) {
-      return { "x-garmin-auth": auth };
-    }
-  } catch {}
-  return {};
-}
-
-export function saveGarminAuthClient(encodedAuth?: string, email?: string) {
+export function purgeLegacyGarminCache() {
   if (typeof window === "undefined") return;
   try {
-    if (encodedAuth) {
-      localStorage.setItem("freeride_garmin_auth", encodedAuth);
-    }
-    if (email) {
-      localStorage.setItem("freeride_garmin_email", email);
-    }
-  } catch {}
-}
-
-export function clearGarminAuthClient() {
-  if (typeof window === "undefined") return;
-  try {
+    localStorage.removeItem("freeride_cached_activities");
     localStorage.removeItem("freeride_garmin_auth");
     localStorage.removeItem("freeride_garmin_email");
   } catch {}
 }
 
+export function getStravaAuthHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    const auth = localStorage.getItem("freeride_strava_auth");
+    if (auth) {
+      return { "x-strava-auth": auth };
+    }
+  } catch {}
+  return {};
+}
+
+export function saveStravaAuthClient(encodedAuth?: string, athleteName?: string) {
+  if (typeof window === "undefined") return;
+  try {
+    purgeLegacyGarminCache();
+    if (encodedAuth) {
+      localStorage.setItem("freeride_strava_auth", encodedAuth);
+    }
+    if (athleteName) {
+      localStorage.setItem("freeride_strava_athlete", athleteName);
+    }
+  } catch {}
+}
+
+export function clearStravaAuthClient() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem("freeride_strava_auth");
+    localStorage.removeItem("freeride_strava_athlete");
+    localStorage.removeItem(STRAVA_CACHE_KEY);
+  } catch {}
+}
+
 export async function fetchActivities(): Promise<ActivitySummary[]> {
+  purgeLegacyGarminCache();
+
   try {
     const res = await fetch(`${API_BASE}/activities`, {
       cache: "no-store",
       headers: {
-        ...getGarminAuthHeaders()
+        ...getStravaAuthHeaders()
       }
     });
     if (res.ok) {
@@ -46,19 +60,19 @@ export async function fetchActivities(): Promise<ActivitySummary[]> {
       if (Array.isArray(data) && data.length > 0) {
         if (typeof window !== "undefined") {
           try {
-            localStorage.setItem("freeride_cached_activities", JSON.stringify(data));
+            localStorage.setItem(STRAVA_CACHE_KEY, JSON.stringify(data));
           } catch {}
         }
         return data;
       }
     }
   } catch (error) {
-    console.error("Error fetching activities:", error);
+    console.error("Error fetching Strava activities:", error);
   }
 
   if (typeof window !== "undefined") {
     try {
-      const cached = localStorage.getItem("freeride_cached_activities");
+      const cached = localStorage.getItem(STRAVA_CACHE_KEY);
       if (cached) {
         const list = JSON.parse(cached);
         if (Array.isArray(list) && list.length > 0) return list;
@@ -70,10 +84,9 @@ export async function fetchActivities(): Promise<ActivitySummary[]> {
 }
 
 export async function fetchActivityDetail(id: string): Promise<ActivityDetail | null> {
-  // 1. Check if we already cached the full activity with real telemetry points locally
   if (typeof window !== "undefined") {
     try {
-      const cachedFull = localStorage.getItem(`freeride_activity_detail_${id}`);
+      const cachedFull = localStorage.getItem(`freeride_strava_detail_${id}`);
       if (cachedFull) {
         const parsed = JSON.parse(cachedFull);
         if (parsed && parsed.id && Array.isArray(parsed.telemetry_points) && parsed.telemetry_points.length > 5) {
@@ -83,12 +96,11 @@ export async function fetchActivityDetail(id: string): Promise<ActivityDetail | 
     } catch {}
   }
 
-  // 2. Fetch from server (which downloads real Garmin telemetry points & HR zones on demand)
   try {
     const res = await fetch(`${API_BASE}/activities/${id}`, {
       cache: "no-store",
       headers: {
-        ...getGarminAuthHeaders()
+        ...getStravaAuthHeaders()
       }
     });
     if (res.ok) {
@@ -96,7 +108,7 @@ export async function fetchActivityDetail(id: string): Promise<ActivityDetail | 
       if (data && data.id) {
         if (typeof window !== "undefined" && Array.isArray(data.telemetry_points) && data.telemetry_points.length > 0) {
           try {
-            localStorage.setItem(`freeride_activity_detail_${id}`, JSON.stringify(data));
+            localStorage.setItem(`freeride_strava_detail_${id}`, JSON.stringify(data));
           } catch {}
         }
         return data;
@@ -106,10 +118,9 @@ export async function fetchActivityDetail(id: string): Promise<ActivityDetail | 
     console.error("Error fetching activity detail:", error);
   }
 
-  // 3. Fallback to summary list if offline
   if (typeof window !== "undefined") {
     try {
-      const cached = localStorage.getItem("freeride_cached_activities");
+      const cached = localStorage.getItem(STRAVA_CACHE_KEY);
       if (cached) {
         const list = JSON.parse(cached);
         if (Array.isArray(list)) {
@@ -131,7 +142,7 @@ export async function uploadActivityFile(file: File, title?: string, description
 
   const res = await fetch(`${API_BASE}/activities/upload`, {
     method: "POST",
-    body: formData,
+    body: formData
   });
 
   if (!res.ok) {
@@ -142,7 +153,7 @@ export async function uploadActivityFile(file: File, title?: string, description
   const created = await res.json();
   if (typeof window !== "undefined" && created && created.id) {
     try {
-      localStorage.setItem(`freeride_activity_detail_${created.id}`, JSON.stringify(created));
+      localStorage.setItem(`freeride_strava_detail_${created.id}`, JSON.stringify(created));
     } catch {}
   }
 
@@ -154,7 +165,7 @@ export async function fetchActivityCoachInsight(activityId: string, activityData
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...getGarminAuthHeaders()
+      ...getStravaAuthHeaders()
     },
     body: JSON.stringify({ activity: activityData })
   });
@@ -168,7 +179,7 @@ export async function fetchWeeklyPlan(): Promise<AIInsight> {
   const res = await fetch(`${API_BASE}/coach/plan`, {
     cache: "no-store",
     headers: {
-      ...getGarminAuthHeaders()
+      ...getStravaAuthHeaders()
     }
   });
   if (!res.ok) {
@@ -181,19 +192,19 @@ export async function deleteActivity(id: string): Promise<boolean> {
   const res = await fetch(`${API_BASE}/activities/${id}`, {
     method: "DELETE",
     headers: {
-      ...getGarminAuthHeaders()
+      ...getStravaAuthHeaders()
     }
   });
 
   if (typeof window !== "undefined") {
     try {
-      localStorage.removeItem(`freeride_activity_detail_${id}`);
-      const cached = localStorage.getItem("freeride_cached_activities");
+      localStorage.removeItem(`freeride_strava_detail_${id}`);
+      const cached = localStorage.getItem(STRAVA_CACHE_KEY);
       if (cached) {
         const list = JSON.parse(cached);
         if (Array.isArray(list)) {
           const filtered = list.filter((a: any) => String(a.id) !== String(id));
-          localStorage.setItem("freeride_cached_activities", JSON.stringify(filtered));
+          localStorage.setItem(STRAVA_CACHE_KEY, JSON.stringify(filtered));
         }
       }
     } catch {}

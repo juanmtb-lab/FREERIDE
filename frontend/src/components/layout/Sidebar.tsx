@@ -27,7 +27,7 @@ export default function Sidebar() {
             <h1 className="font-bold text-xl tracking-wider text-white group-hover:text-orange-400 transition-colors">
               FREERIDE
             </h1>
-            <p className="text-xs text-dark-accent font-medium">Garmin Connect Telemetry</p>
+            <p className="text-xs text-dark-accent font-medium">Strava Telemetry & AI Coach</p>
           </div>
         </Link>
 
@@ -55,13 +55,13 @@ export default function Sidebar() {
 
       <div className="p-4 border-t border-dark-border">
         <div className="glass-panel p-3 rounded-xl text-xs space-y-1">
-          <div className="flex items-center justify-between text-emerald-400">
+          <div className="flex items-center justify-between text-orange-400">
             <span className="flex items-center space-x-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="font-medium">Garmin Connect Activo</span>
+              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+              <span className="font-medium">Motor Strava API v3</span>
             </span>
           </div>
-          <p className="text-dark-muted text-[11px]">Telemetría Real & Entrenador AI</p>
+          <p className="text-dark-muted text-[11px]">Streams Reales & Entrenador AI</p>
         </div>
       </div>
     </aside>

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { deleteActivityById } from '@/lib/storage';
-import { fetchGarminActivityTelemetry } from '@/lib/garmin_live';
+import { fetchStravaActivityTelemetry } from '@/lib/strava_live';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -10,15 +10,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const activity = await fetchGarminActivityTelemetry(params.id, request);
+    const activity = await fetchStravaActivityTelemetry(params.id, request);
     if (!activity) {
       return NextResponse.json({ detail: 'Actividad no encontrada' }, { status: 404 });
     }
     return NextResponse.json(activity);
   } catch (error: any) {
-    console.error(`Error fetching activity detail ${params.id}:`, error);
+    console.error(`Error fetching Strava activity detail ${params.id}:`, error);
     return NextResponse.json(
-      { detail: error.message || 'Error al obtener los detalles de la actividad' },
+      { detail: error.message || 'Error al obtener los detalles de la actividad desde Strava' },
       { status: 500 }
     );
   }

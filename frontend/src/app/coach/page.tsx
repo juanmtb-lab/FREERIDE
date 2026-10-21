@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CoachResponse, RiderFitnessMetrics } from "@/lib/n8n_coach";
-import { getGarminAuthHeaders } from "@/lib/api";
+import { getStravaAuthHeaders } from "@/lib/api";
 import {
   BrainCircuit,
   Calendar,
@@ -33,7 +33,7 @@ export default function CoachPage() {
       const res = await fetch("/api/v1/coach/plan", {
         cache: "no-store",
         headers: {
-          ...getGarminAuthHeaders()
+          ...getStravaAuthHeaders()
         }
       });
       if (res.ok) {
@@ -67,7 +67,7 @@ export default function CoachPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...getGarminAuthHeaders()
+          ...getStravaAuthHeaders()
         },
         body: JSON.stringify({ query: queryText })
       });
@@ -95,7 +95,7 @@ export default function CoachPage() {
     ctl: 0,
     atl: 0,
     tsb: 0,
-    formStatus: "Calculando carga de Garmin Connect...",
+    formStatus: "Calculando carga histórica desde Strava...",
     formColor: "#06B6D4",
     weeklyDistanceKm: 0,
     weeklyElevGainM: 0,
@@ -120,7 +120,7 @@ export default function CoachPage() {
                 </span>
               </div>
               <p className="text-xs text-dark-muted">
-                Optimización fisiológica de carga (CTL / ATL / TSB) y seguimiento adaptativo
+                Optimización fisiológica de carga (CTL / ATL / TSB) sobre todo tu historial de Strava
               </p>
             </div>
           </div>
@@ -135,9 +135,8 @@ export default function CoachPage() {
         </div>
 
         <p className="text-xs sm:text-sm text-dark-muted max-w-3xl leading-relaxed">
-          Tu entrenador personal analiza directamente la telemetría real sincronizada desde{" "}
-          <strong className="text-white">Garmin Connect (Garmin Edge 130)</strong>. Calcula tu fatiga acumulada,
-          previene lesiones por sobrentrenamiento y diseña entrenamientos específicos para tus salidas de Carretera y MTB.
+          Tu entrenador personal analiza todo tu historial de entrenamientos sincronizado desde{" "}
+          <strong className="text-white">Strava API v3</strong>. Calcula tu estado de forma (CTL), fatiga aguda (ATL) y balance de frescura (TSB) para diseñar tus entrenamientos semanales de Carretera y MTB.
         </p>
       </div>
 
@@ -217,7 +216,7 @@ export default function CoachPage() {
             <div>
               <h2 className="text-base sm:text-lg font-bold text-white">Consultar a tu Entrenador AI</h2>
               <p className="text-xs text-dark-muted">
-                Hazle cualquier pregunta sobre tu ritmo, alimentación o entrenamiento de hoy
+                Hazle cualquier pregunta sobre tu evolución, ritmo, alimentación o entrenamiento de hoy
               </p>
             </div>
           </div>
@@ -265,7 +264,7 @@ export default function CoachPage() {
           {chatLoading && (
             <div className="p-4 bg-dark-bg/90 rounded-2xl border border-dark-border text-xs text-orange-400 flex items-center space-x-2 animate-pulse">
               <RefreshCw className="w-4 h-4 animate-spin" />
-              <span>El Entrenador AI está procesando tus datos de Garmin Connect y preparando tu respuesta...</span>
+              <span>El Entrenador AI está procesando tu historial de Strava y preparando tu respuesta...</span>
             </div>
           )}
         </div>

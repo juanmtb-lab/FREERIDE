@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { queryAiCoach } from '@/lib/n8n_coach';
 import { getStoredActivities } from '@/lib/storage';
-import { syncGarminActivitiesLive } from '@/lib/garmin_live';
+import { syncStravaActivitiesLive } from '@/lib/strava_live';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   try {
     if (getStoredActivities().length === 0) {
       try {
-        await syncGarminActivitiesLive({ request });
+        await syncStravaActivitiesLive({ request });
       } catch {}
     }
     const coachResponse = await queryAiCoach();
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     } catch {}
     if (getStoredActivities().length === 0) {
       try {
-        await syncGarminActivitiesLive({ request });
+        await syncStravaActivitiesLive({ request });
       } catch {}
     }
     const query = body.query;

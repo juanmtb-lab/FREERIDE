@@ -7,7 +7,7 @@ import {
   fetchActivityDetail,
   fetchActivityCoachInsight,
   deleteActivity,
-  getGarminAuthHeaders
+  getStravaAuthHeaders
 } from "@/lib/api";
 import { formatDistance, formatElevation, formatTime, formatSpeed, formatWatts } from "@/lib/utils";
 import TelemetryCharts from "@/components/charts/TelemetryCharts";
@@ -40,7 +40,7 @@ export default function ActivityDetailPage() {
       const res = await fetch(`/api/v1/activities/${activityId}`, {
         cache: "no-store",
         headers: {
-          ...getGarminAuthHeaders()
+          ...getStravaAuthHeaders()
         }
       });
       if (res.ok) {
@@ -49,13 +49,13 @@ export default function ActivityDetailPage() {
           setActivity(fresh);
           if (typeof window !== "undefined" && Array.isArray(fresh.telemetry_points) && fresh.telemetry_points.length > 0) {
             try {
-              localStorage.setItem(`freeride_activity_detail_${activityId}`, JSON.stringify(fresh));
+              localStorage.setItem(`freeride_strava_detail_${activityId}`, JSON.stringify(fresh));
             } catch {}
           }
         }
       }
     } catch (e) {
-      console.error("Error refreshing telemetry:", e);
+      console.error("Error refreshing Strava streams:", e);
     } finally {
       setRefreshingTelemetry(false);
     }
@@ -66,7 +66,6 @@ export default function ActivityDetailPage() {
       fetchActivityDetail(activityId).then((data) => {
         setActivity(data);
         setLoading(false);
-        // If loaded from summary fallback without telemetry points, fetch real telemetry from Garmin immediately
         if (data && (!data.telemetry_points || data.telemetry_points.length === 0)) {
           handleRefreshTelemetry();
         }
@@ -98,7 +97,7 @@ export default function ActivityDetailPage() {
     return (
       <div className="max-w-7xl mx-auto p-12 text-center text-dark-muted glass-panel rounded-3xl flex flex-col items-center justify-center space-y-3">
         <RefreshCw className="w-6 h-6 animate-spin text-orange-400" />
-        <span>Descargando telemetría y gráficas reales de Garmin Connect...</span>
+        <span>Descargando telemetría y gráficas reales (Strava Streams)...</span>
       </div>
     );
   }
@@ -133,11 +132,11 @@ export default function ActivityDetailPage() {
           <button
             onClick={handleRefreshTelemetry}
             disabled={refreshingTelemetry}
-            className="px-3 py-1.5 rounded-xl bg-dark-card border border-dark-border text-xs text-cyan-400 hover:text-white flex items-center space-x-1.5 transition disabled:opacity-50"
-            title="Volver a descargar gráficas originales de Garmin Connect"
+            className="px-3 py-1.5 rounded-xl bg-dark-card border border-orange-500/30 text-xs text-orange-400 hover:text-white flex items-center space-x-1.5 transition disabled:opacity-50"
+            title="Volver a descargar Streams originales de Strava"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshingTelemetry ? "animate-spin" : ""}`} />
-            <span>Actualizar Gráficas Garmin</span>
+            <span>Actualizar Gráficas Strava</span>
           </button>
 
           <button
@@ -201,13 +200,13 @@ export default function ActivityDetailPage() {
 
           <div>
             <p className="text-[11px] text-dark-muted font-medium">
-              {activity.avg_cadence ? "Cadencia Media" : "Potencia Estimada"}
+              {powerVal ? "Potencia Media" : "Cadencia Media"}
             </p>
             <p className="text-xl font-bold text-amber-400">
-              {activity.avg_cadence
-                ? `${activity.avg_cadence} rpm`
-                : powerVal
+              {powerVal
                 ? formatWatts(powerVal)
+                : activity.avg_cadence
+                ? `${activity.avg_cadence} rpm`
                 : "--"}
             </p>
           </div>
@@ -222,11 +221,11 @@ export default function ActivityDetailPage() {
         </div>
       </div>
 
-      {/* Synchronized Telemetry & Garmin Connect Style Charts */}
+      {/* Synchronized Telemetry & Strava Streams Charts */}
       <div className="space-y-4">
         <h2 className="text-lg font-bold text-white flex items-center space-x-2">
-          <HRIcon className="w-5 h-5 text-cyan-400" />
-          <span>Gráficas Reales de Telemetría & Zonas Garmin Connect</span>
+          <HRIcon className="w-5 h-5 text-orange-400" />
+          <span>Gráficas Reales de Telemetría & Zonas (Strava Streams)</span>
         </h2>
         <TelemetryCharts
           points={activity.telemetry_points}
@@ -269,7 +268,7 @@ export default function ActivityDetailPage() {
           </div>
         ) : (
           <div className="text-center py-6 text-dark-muted text-xs">
-            Haz clic en &quot;Generar Análisis AI&quot; para obtener feedback fisiológico real de tu salida en español.
+            Haz clic en &quot;Generar Análisis AI&quot; para obtener feedback fisiológico real de tu entrenamiento en español.
           </div>
         )}
       </div>

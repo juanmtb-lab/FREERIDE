@@ -142,20 +142,20 @@ export default function TelemetryCharts({
         <div className="glass-panel p-6 rounded-2xl border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-white">
-              Puntos de telemetría detallada pendientes de descarga desde Garmin Connect
+              Puntos de telemetría detallada pendientes de descarga desde Strava
             </h3>
             <p className="text-xs text-dark-muted">
-              FREERIDE no inventa curvas falsas. Pulsa el botón para descargar la serie temporal segundo a segundo directamente de Garmin Connect.
+              FREERIDE no inventa curvas falsas. Pulsa el botón para descargar los Streams segundo a segundo directamente de Strava API.
             </p>
           </div>
           {onRefreshTelemetry && (
             <button
               onClick={onRefreshTelemetry}
               disabled={refreshingTelemetry}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white text-xs font-bold flex items-center space-x-2 shrink-0 transition disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl bg-[#FC4C02] hover:bg-[#e34402] text-white text-xs font-bold flex items-center space-x-2 shrink-0 transition disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${refreshingTelemetry ? "animate-spin" : ""}`} />
-              <span>{refreshingTelemetry ? "Descargando de Garmin..." : "Descargar Gráficas de Garmin"}</span>
+              <span>{refreshingTelemetry ? "Descargando de Strava..." : "Descargar Gráficas de Strava"}</span>
             </button>
           )}
         </div>
@@ -254,7 +254,7 @@ export default function TelemetryCharts({
                 <Mountain className="w-4 h-4 text-emerald-400" />
                 <span>Altitud (m)</span>
               </h3>
-              <span className="text-xs text-dark-muted">Perfil topográfico registrado por Garmin</span>
+              <span className="text-xs text-dark-muted">Perfil topográfico real (Strava Streams)</span>
             </div>
 
             <div className="h-56 w-full">
@@ -476,7 +476,7 @@ export default function TelemetryCharts({
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-white flex items-center space-x-2">
               <HRIcon className="w-4 h-4 text-rose-500" />
-              <span>Tiempo en Zonas de Frecuencia Cardíaca (Garmin Connect)</span>
+              <span>Tiempo en Zonas de Frecuencia Cardíaca (Strava)</span>
             </h3>
             <span className="text-xs text-dark-muted">Zonas Z1 - Z5</span>
           </div>

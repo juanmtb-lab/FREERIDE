@@ -192,10 +192,10 @@ export async function analyzeSingleActivityWithCoach(activity: StoredActivity): 
 
   const contentEs = `📋 Diagnóstico Fisiológico de la Salida: "${activity.title}"
 
-• Distancia y Duración Real (Garmin Connect): ${distKm} km en ${durMin} minutos (${activity.avg_speed_kmh} km/h media, máx ${activity.max_speed_kmh} km/h).
+• Distancia y Duración Real (Strava): ${distKm} km en ${durMin} minutos (${activity.avg_speed_kmh} km/h media, máx ${activity.max_speed_kmh} km/h).
 • Desnivel Acumulado: +${activity.elevation_gain_m} m (${Math.round(activity.elevation_gain_m / Math.max(1, Number(distKm)))} m/km de ratio vertical).
 • Respuesta Cardíaca: ${hrText}${activity.avg_cadence ? ` | Cadencia media: ${activity.avg_cadence} rpm` : ''}.
-• Distribución en Zonas Garmin: ${zonesSummary}.
+• Distribución en Zonas Strava: ${zonesSummary}.
 
 💡 Recomendación del Entrenador AI:
 ${recoveryAdvice}`;
@@ -225,7 +225,7 @@ export async function queryAiCoach(userQuery?: string): Promise<CoachResponse> {
         timestamp: new Date().toISOString(),
         user_query: userQuery || 'Generar plan de entrenamiento semanal adaptativo',
         rider_metrics: metrics,
-        recent_activities: activities.slice(0, 10).map(a => ({
+        recent_activities: activities.slice(0, 15).map(a => ({
           id: a.id,
           title: a.title,
           type: a.activity_type,
@@ -269,25 +269,25 @@ export async function queryAiCoach(userQuery?: string): Promise<CoachResponse> {
 
 **Tu Consulta:** "${userQuery}"
 
-**Análisis Fisiológico de Carga (Datos Reales Garmin Connect):**
+**Análisis Fisiológico de Carga (Historial Real de Strava):**
 - **Estado de Forma (CTL):** ${metrics.ctl} TSS
 - **Fatiga Aguda (ATL):** ${metrics.atl} TSS
 - **Balance de Frescura (TSB):** ${metrics.tsb} TSS (${metrics.formStatus})
 - **Volumen Reciente (7 días):** ${metrics.weeklyDistanceKm} km con +${metrics.weeklyElevGainM} m de desnivel positivo.
 
 **Recomendación Específica del Entrenador:**
-1. **Zonas de Frecuencia Cardíaca Prioritarias:** Según tus registros reales de Garmin (${metrics.avgHrLastRides > 0 ? `media reciente de ${metrics.avgHrLastRides} bpm` : 'sensor cardíaco Garmin'}), mantén el 75% del volumen semanal en **Zona 2** para optimizar la base aeróbica sin disparar la fatiga aguda (ATL).
+1. **Zonas de Frecuencia Cardíaca Prioritarias:** Según tu historial de Strava (${metrics.avgHrLastRides > 0 ? `media reciente de ${metrics.avgHrLastRides} bpm` : 'sensor cardíaco'}), mantén el 75% del volumen semanal en **Zona 2** para optimizar la base aeróbica sin disparar la fatiga aguda (ATL).
 2. **Estructura de Series:** Incluye 1 sesión semanal de intervalos en Zona 4 (3 bloques de 10 min al umbral con 5 min de recuperación activa en Zona 1).
 3. **Cadencia Eficiente:** Mantén entre **85 y 92 rpm** en llano y >75 rpm en subida para proteger la musculatura e incrementar la eficiencia mecánica.`;
   } else {
     contentEs = `### 🏆 Diagnóstico Semanal del Entrenador Personal AI
 
-**Estado Fisiológico Actual (Garmin Connect):**
+**Estado Fisiológico Actual (Strava API v3):**
 - **Fitness (CTL):** ${metrics.ctl} puntos
 - **Fatiga Acumulada (ATL):** ${metrics.atl} puntos
 - **Balance de Frescura (TSB):** ${metrics.tsb} puntos (${metrics.formStatus})
-- **Pulsaciones Medias Recientes:** ${metrics.avgHrLastRides > 0 ? `${metrics.avgHrLastRides} bpm` : 'Sincronizado con Garmin'}
-- **Total Actividades Analizadas:** ${activities.length} salidas reales
+- **Pulsaciones Medias Recientes:** ${metrics.avgHrLastRides > 0 ? `${metrics.avgHrLastRides} bpm` : 'Sincronizado con Strava'}
+- **Total Actividades Analizadas:** ${activities.length} entrenamientos reales
 
 **Planificación Adaptativa Semanal:**
 Tu carga de entrenamiento se encuentra en un estado **${metrics.tsb >= 0 ? 'óptimo de frescura para asimilar series de intensidad' : 'de carga acumulada donde priorizar la Zona 2 y el descanso es clave'}**.`;
