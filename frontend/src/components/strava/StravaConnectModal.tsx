@@ -8,9 +8,10 @@ interface StravaConnectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  initialError?: string | null;
 }
 
-export default function StravaConnectModal({ isOpen, onClose, onSuccess }: StravaConnectModalProps) {
+export default function StravaConnectModal({ isOpen, onClose, onSuccess, initialError }: StravaConnectModalProps) {
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [accessToken, setAccessToken] = useState("");
@@ -21,6 +22,9 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess }: Strav
 
   useEffect(() => {
     if (isOpen && typeof window !== "undefined") {
+      if (initialError) {
+        setError(initialError);
+      }
       try {
         const savedCid = localStorage.getItem("freeride_strava_cid");
         const savedSec = localStorage.getItem("freeride_strava_csec");
@@ -28,30 +32,33 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess }: Strav
         if (savedSec) setClientSecret(savedSec);
       } catch {}
     }
-  }, [isOpen]);
+  }, [isOpen, initialError]);
 
   if (!isOpen) return null;
 
   const handleOAuthRedirect = () => {
-    if (!clientId.trim() || !clientSecret.trim()) {
+    const cleanCid = clientId.trim();
+    const cleanSec = clientSecret.trim();
+    if (!cleanCid || !cleanSec) {
       setError("Para autorizar en 1 clic con OAuth2, introduce primero tu Client ID y Client Secret de Strava.");
       return;
     }
     try {
-      localStorage.setItem("freeride_strava_cid", clientId.trim());
-      localStorage.setItem("freeride_strava_csec", clientSecret.trim());
+      localStorage.setItem("freeride_strava_cid", cleanCid);
+      localStorage.setItem("freeride_strava_csec", cleanSec);
     } catch {}
 
     const origin = window.location.origin;
-    const redirectUri = `${origin}/api/v1/strava/callback?client_id=${encodeURIComponent(
-      clientId.trim()
-    )}&client_secret=${encodeURIComponent(clientSecret.trim())}`;
+    const redirectUri = `${origin}/`;
+    const statePayload = btoa(JSON.stringify({ cid: cleanCid, csec: cleanSec }));
 
     const oauthUrl = `https://www.strava.com/oauth/authorize?client_id=${encodeURIComponent(
-      clientId.trim()
+      cleanCid
     )}&response_type=code&redirect_uri=${encodeURIComponent(
       redirectUri
-    )}&approval_prompt=force&scope=read,activity:read_all,profile:read_all`;
+    )}&approval_prompt=force&scope=read,activity:read_all,profile:read_all&state=${encodeURIComponent(
+      statePayload
+    )}`;
 
     window.location.href = oauthUrl;
   };
@@ -91,11 +98,12 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess }: Strav
         } catch {}
       }
 
+      window.dispatchEvent(new Event("strava-synced"));
       setSuccessMsg(data.message || "¡Sincronización con Strava completada!");
       setTimeout(() => {
         if (onSuccess) onSuccess();
         onClose();
-      }, 1200);
+      }, 1000);
     } catch (err: any) {
       setError(err.message || "Error al conectar con Strava");
     } finally {
@@ -140,7 +148,8 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess }: Strav
           </div>
           <p className="text-[11px] leading-relaxed">
             1. Entra en <strong className="text-white">strava.com/settings/api</strong>.<br />
-            2. Copia tu <strong className="text-white">Client ID</strong> y <strong className="text-white">Client Secret</strong> y pulsa el botón naranja <strong className="text-orange-400">&quot;Autorizar con Strava (Recomendado)&quot;</strong> para dar permiso de lectura de actividades (<code className="text-orange-300">activity:read_all</code>).
+            2. Copia tu <strong className="text-white">ID de cliente (Client ID)</strong> y pulsa <strong className="text-white">&quot;Mostrar&quot;</strong> en <strong className="text-white">Secreto del cliente (Client Secret)</strong> para copiarlo.<br />
+            3. Pulsa el botón naranja <strong className="text-orange-400">&quot;Autorizar con Strava en 1 Clic&quot;</strong> para importar todas tus actividades anteriores.
           </p>
         </div>
 
@@ -162,27 +171,27 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess }: Strav
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-semibold text-dark-muted mb-1">
-                Client ID (Strava API)
+                ID de cliente (Client ID)
               </label>
               <input
                 type="text"
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
                 placeholder="Ej: 123456"
-                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 font-mono"
               />
             </div>
 
             <div>
               <label className="block text-[11px] font-semibold text-dark-muted mb-1">
-                Client Secret
+                Secreto del cliente (Client Secret)
               </label>
               <input
-                type="password"
+                type="text"
                 value={clientSecret}
                 onChange={(e) => setClientSecret(e.target.value)}
-                placeholder="••••••••••••••••"
-                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"
+                placeholder="Pega tu Secreto del cliente"
+                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 font-mono"
               />
             </div>
           </div>

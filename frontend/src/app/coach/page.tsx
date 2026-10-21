@@ -27,14 +27,28 @@ export default function CoachPage() {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "coach"; text: string; time: string }[]>([]);
 
+  const getCachedClientActivities = () => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem("freeride_strava_activities_v4");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  };
+
   const loadCoachData = async () => {
     setLoading(true);
     try {
+      const cachedActs = getCachedClientActivities();
       const res = await fetch("/api/v1/coach/plan", {
+        method: "POST",
         cache: "no-store",
         headers: {
+          "Content-Type": "application/json",
           ...getStravaAuthHeaders()
-        }
+        },
+        body: JSON.stringify({ activities: cachedActs })
       });
       if (res.ok) {
         const data = await res.json();
@@ -63,13 +77,14 @@ export default function CoachPage() {
     setChatLoading(true);
 
     try {
+      const cachedActs = getCachedClientActivities();
       const res = await fetch("/api/v1/coach/plan", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...getStravaAuthHeaders()
         },
-        body: JSON.stringify({ query: queryText })
+        body: JSON.stringify({ query: queryText, activities: cachedActs })
       });
 
       if (res.ok) {

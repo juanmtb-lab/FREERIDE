@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { syncStravaActivitiesLive } from '@/lib/strava_live';
-import { getStravaSession, saveStravaSession } from '@/lib/strava_session';
+import {
+  getStravaSession,
+  saveStravaSession,
+  exchangeStravaCodeForToken
+} from '@/lib/strava_session';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -11,6 +15,7 @@ export async function POST(request: Request) {
     let clientSecret: string | undefined;
     let accessToken: string | undefined;
     let refreshToken: string | undefined;
+    let oauthCode: string | undefined;
 
     try {
       const body = await request.json();
@@ -19,20 +24,38 @@ export async function POST(request: Request) {
         clientSecret = body.client_secret?.trim();
         accessToken = body.access_token?.trim();
         refreshToken = body.refresh_token?.trim();
+        oauthCode = body.code?.trim();
       }
     } catch {}
 
     const existing = getStravaSession(request);
-    if (!clientId) clientId = existing?.clientId;
-    if (!clientSecret) clientSecret = existing?.clientSecret;
-    if (!accessToken) accessToken = existing?.accessToken;
-    if (!refreshToken) refreshToken = existing?.refreshToken;
+    if (!clientId) clientId = existing?.clientId || process.env.STRAVA_CLIENT_ID;
+    if (!clientSecret) clientSecret = existing?.clientSecret || process.env.STRAVA_CLIENT_SECRET;
+    if (!accessToken) accessToken = existing?.accessToken || process.env.STRAVA_ACCESS_TOKEN;
+    if (!refreshToken) refreshToken = existing?.refreshToken || process.env.STRAVA_REFRESH_TOKEN;
+
+    // If returning from 1-click Strava OAuth2 authorize screen with ?code=...
+    if (oauthCode) {
+      if (!clientId || !clientSecret) {
+        return NextResponse.json(
+          {
+            detail:
+              'Para completar la autorización de Strava, introduce tu Client ID y Client Secret en el formulario de conexión.'
+          },
+          { status: 400 }
+        );
+      }
+
+      const oauthSession = await exchangeStravaCodeForToken(oauthCode, clientId, clientSecret);
+      accessToken = oauthSession.accessToken;
+      refreshToken = oauthSession.refreshToken;
+    }
 
     if (!accessToken && !(clientId && clientSecret && refreshToken)) {
       return NextResponse.json(
         {
           detail:
-            'Introduce tu Access Token de Strava, o bien tu Client ID + Client Secret + Refresh Token desde strava.com/settings/api.'
+            'Introduce tu Client ID y Client Secret y pulsa "Autorizar con Strava en 1 Clic", o bien introduce tu Access Token y Refresh Token desde strava.com/settings/api.'
         },
         { status: 400 }
       );
@@ -62,7 +85,7 @@ export async function POST(request: Request) {
       : undefined;
 
     return NextResponse.json({
-      message: `¡Sincronización con Strava completada! Se han importado ${syncedCount} entrenamientos reales.`,
+      message: `¡Sincronización con Strava completada! Se han importado ${syncedCount} entrenamientos reales de tu historial.`,
       synced_count: syncedCount,
       activities: summaries,
       strava_auth: encodedAuth,

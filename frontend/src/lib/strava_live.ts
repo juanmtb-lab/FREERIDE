@@ -4,7 +4,7 @@ import {
   refreshStravaTokenIfNeeded,
   StravaSessionData
 } from './strava_session';
-import { saveActivity, getStoredActivities, getActivityById, StoredActivity } from './storage';
+import { saveActivity, saveActivitiesBatch, getStoredActivities, getActivityById, StoredActivity } from './storage';
 
 const STRAVA_API = 'https://www.strava.com/api/v3';
 
@@ -88,12 +88,12 @@ export async function syncStravaActivitiesLive(options?: {
     console.log('Could not fetch Strava athlete profile:', e);
   }
 
-  // 2. Fetch up to 200 historical activities from Strava (2 pages of 100)
+  // 2. Fetch up to 600 historical activities from Strava (3 pages of 200)
   const allStravaActivities: any[] = [];
 
-  for (let page = 1; page <= 2; page++) {
+  for (let page = 1; page <= 3; page++) {
     const { res, session: updatedSession } = await stravaFetchWithAuth(
-      `${STRAVA_API}/athlete/activities?per_page=100&page=${page}`,
+      `${STRAVA_API}/athlete/activities?per_page=200&page=${page}`,
       session
     );
     session = updatedSession;
@@ -101,8 +101,13 @@ export async function syncStravaActivitiesLive(options?: {
     if (!res.ok) {
       if (page === 1) {
         const errText = await res.text();
+        if (res.status === 401 || errText.includes('activity:read_permission')) {
+          throw new Error(
+            `El token de Strava no tiene permiso de lectura de actividades (activity:read_all). Usa el botón naranja "Autorizar con Strava en 1 Clic (OAuth2 Completo)" con tu Client ID y Client Secret.`
+          );
+        }
         throw new Error(
-          `Error al conectar con Strava (${res.status}): Verifica tu Access Token o credenciales OAuth. ${errText}`
+          `Error al conectar con Strava (${res.status}): Verifica tus credenciales OAuth. ${errText}`
         );
       }
       break;
@@ -114,12 +119,12 @@ export async function syncStravaActivitiesLive(options?: {
     }
 
     allStravaActivities.push(...pageItems);
-    if (pageItems.length < 100) {
+    if (pageItems.length < 200) {
       break;
     }
   }
 
-  let syncedCount = 0;
+  const parsedBatch: StoredActivity[] = [];
 
   for (const stAct of allStravaActivities) {
     if (!stAct || !stAct.id) continue;
@@ -129,9 +134,16 @@ export async function syncStravaActivitiesLive(options?: {
     const nameRaw = String(stAct.name || '').toLowerCase();
 
     let activityType: 'ROAD_BIKE' | 'MOUNTAIN_BIKE' | 'GRAVEL' | 'UNKNOWN' = 'ROAD_BIKE';
-    if (sportRaw.includes('mountain') || sportRaw.includes('mtb') || nameRaw.includes('mtb') || nameRaw.includes('btt')) {
+    if (
+      sportRaw.includes('mountain') ||
+      sportRaw.includes('mtb') ||
+      sportRaw.includes('trail') ||
+      nameRaw.includes('mtb') ||
+      nameRaw.includes('btt') ||
+      nameRaw.includes('montaña')
+    ) {
       activityType = 'MOUNTAIN_BIKE';
-    } else if (sportRaw.includes('gravel')) {
+    } else if (sportRaw.includes('gravel') || nameRaw.includes('gravel')) {
       activityType = 'GRAVEL';
     }
 
@@ -179,16 +191,17 @@ export async function syncStravaActivitiesLive(options?: {
       mtb_technical_score: activityType === 'MOUNTAIN_BIKE' ? 7.5 : 1.5,
       summary_polyline: stAct.map?.summary_polyline,
       created_at: new Date().toISOString(),
-      telemetry_points: [] // Existing telemetry_points are preserved in saveActivity or loaded on demand via Strava Streams
+      telemetry_points: []
     };
 
-    saveActivity(stored);
-    syncedCount++;
+    parsedBatch.push(stored);
   }
 
+  const mergedActivities = saveActivitiesBatch(parsedBatch);
+
   return {
-    activities: getStoredActivities(),
-    syncedCount,
+    activities: mergedActivities,
+    syncedCount: parsedBatch.length,
     session
   };
 }

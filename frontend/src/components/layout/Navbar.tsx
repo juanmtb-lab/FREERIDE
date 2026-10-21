@@ -20,20 +20,11 @@ export default function Navbar() {
   const checkSession = async () => {
     purgeLegacyGarminCache();
 
-    // Check if returning from 1-click Strava OAuth2 callback
     if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const oauthConnected = params.get("strava_connected");
-      const oauthAuth = params.get("strava_auth");
-      const oauthAthlete = params.get("athlete");
-
-      if (oauthConnected === "1" && oauthAuth) {
-        saveStravaAuthClient(oauthAuth, oauthAthlete || "Atleta Strava");
-        setSession({ connected: true, athleteName: oauthAthlete || "Atleta Strava" });
-        setSyncMessage("¡Conectado y sincronizado con Strava!");
-        window.history.replaceState({}, "", window.location.pathname);
-        setTimeout(() => setSyncMessage(null), 4000);
-        return;
+      const cachedAthlete = localStorage.getItem("freeride_strava_athlete");
+      const cachedAuth = localStorage.getItem("freeride_strava_auth");
+      if (cachedAuth) {
+        setSession({ connected: true, athleteName: cachedAthlete || "Atleta Strava" });
       }
     }
 
@@ -54,18 +45,13 @@ export default function Navbar() {
     } catch (e) {
       console.error(e);
     }
-
-    if (typeof window !== "undefined") {
-      const cachedAthlete = localStorage.getItem("freeride_strava_athlete");
-      const cachedAuth = localStorage.getItem("freeride_strava_auth");
-      if (cachedAuth) {
-        setSession({ connected: true, athleteName: cachedAthlete || "Atleta Strava" });
-      }
-    }
   };
 
   useEffect(() => {
     checkSession();
+    const handleSynced = () => checkSession();
+    window.addEventListener("strava-synced", handleSynced);
+    return () => window.removeEventListener("strava-synced", handleSynced);
   }, []);
 
   const handleQuickRefresh = async () => {

@@ -112,15 +112,17 @@ export async function refreshStravaTokenIfNeeded(
     return session;
   }
 
+  const bodyParams = new URLSearchParams({
+    client_id: clientId.trim(),
+    client_secret: clientSecret.trim(),
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken.trim()
+  });
+
   const res = await fetch('https://www.strava.com/oauth/token', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: clientId,
-      client_secret: clientSecret,
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken
-    })
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: bodyParams.toString()
   });
 
   if (!res.ok) {
@@ -130,13 +132,81 @@ export async function refreshStravaTokenIfNeeded(
 
   const tokenData = await res.json();
   return saveStravaSession({
-    clientId,
-    clientSecret,
+    clientId: clientId.trim(),
+    clientSecret: clientSecret.trim(),
     accessToken: tokenData.access_token,
     refreshToken: tokenData.refresh_token || refreshToken,
     expiresAt: tokenData.expires_at,
     athleteName: session.athleteName,
     athleteId: session.athleteId
+  });
+}
+
+export async function exchangeStravaCodeForToken(
+  code: string,
+  clientId: string,
+  clientSecret: string
+): Promise<StravaSessionData> {
+  const cleanCid = clientId.trim();
+  const cleanSec = clientSecret.trim();
+  const cleanCode = code.trim();
+
+  const bodyParams = new URLSearchParams({
+    client_id: cleanCid,
+    client_secret: cleanSec,
+    code: cleanCode,
+    grant_type: 'authorization_code'
+  });
+
+  const tokenRes = await fetch('https://www.strava.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: bodyParams.toString()
+  });
+
+  if (!tokenRes.ok) {
+    const errText = await tokenRes.text();
+    // Check if the user accidentally pasted their Access Token into the Client Secret field
+    if (errText.includes('client_secret')) {
+      try {
+        const testRes = await fetch('https://www.strava.com/api/v3/athlete', {
+          headers: { Authorization: `Bearer ${cleanSec}` },
+          cache: 'no-store'
+        });
+        if (testRes.ok) {
+          const athlete = await testRes.json();
+          const athleteName =
+            [athlete.firstname, athlete.lastname].filter(Boolean).join(' ') || 'Atleta Strava';
+          return saveStravaSession({
+            clientId: cleanCid,
+            accessToken: cleanSec,
+            athleteName,
+            athleteId: String(athlete.id || '')
+          });
+        }
+      } catch {}
+      throw new Error(
+        'Strava rechazó el "Client Secret" (Secreto del cliente). Asegúrate en strava.com/settings/api de pulsar "Mostrar" junto a "Secreto del cliente" y copiar ese código exacto (no el Token de acceso ni los asteriscos).'
+      );
+    }
+    throw new Error(`Error OAuth de Strava (${tokenRes.status}): ${errText}`);
+  }
+
+  const tokenData = await tokenRes.json();
+  const athlete = tokenData.athlete || {};
+  const athleteName =
+    [athlete.firstname, athlete.lastname].filter(Boolean).join(' ') ||
+    athlete.username ||
+    'Atleta Strava';
+
+  return saveStravaSession({
+    clientId: cleanCid,
+    clientSecret: cleanSec,
+    accessToken: tokenData.access_token,
+    refreshToken: tokenData.refresh_token,
+    expiresAt: tokenData.expires_at,
+    athleteName,
+    athleteId: String(athlete.id || '')
   });
 }
 

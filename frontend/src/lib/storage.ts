@@ -74,47 +74,62 @@ export function getStoredActivities(): StoredActivity[] {
   }
 }
 
-export function saveActivity(activity: StoredActivity): StoredActivity {
+export function saveActivitiesBatch(newActivities: StoredActivity[]): StoredActivity[] {
   try {
     const file = getDataFilePath();
-    const activities = getStoredActivities();
+    const existingList = getStoredActivities();
+    const map = new Map<string, StoredActivity>();
 
-    const existingIndex = activities.findIndex(existing => String(existing.id) === String(activity.id));
-
-    let finalActivity = activity;
-
-    if (existingIndex !== -1) {
-      const existing = activities[existingIndex];
-      finalActivity = {
-        ...existing,
-        ...activity,
-        // Preserve already-downloaded real telemetry points & HR zones if new summary doesn't include them
-        telemetry_points:
-          activity.telemetry_points && activity.telemetry_points.length > 0
-            ? activity.telemetry_points
-            : existing.telemetry_points || [],
-        hr_zone_distribution:
-          activity.hr_zone_distribution && Object.keys(activity.hr_zone_distribution).length > 0
-            ? activity.hr_zone_distribution
-            : existing.hr_zone_distribution,
-        avg_watts_est: activity.avg_watts_est ?? existing.avg_watts_est,
-        max_watts_est: activity.max_watts_est ?? existing.max_watts_est,
-        normalized_power: activity.normalized_power ?? existing.normalized_power,
-        max_cadence: activity.max_cadence ?? existing.max_cadence,
-        cadence_distribution: activity.cadence_distribution ?? existing.cadence_distribution,
-      };
-      activities[existingIndex] = finalActivity;
-    } else {
-      activities.unshift(finalActivity);
+    for (const item of existingList) {
+      map.set(String(item.id), item);
     }
 
-    activities.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
-    fs.writeFileSync(file, JSON.stringify(activities, null, 2), 'utf-8');
-    return finalActivity;
+    for (const activity of newActivities) {
+      const idKey = String(activity.id);
+      const existing = map.get(idKey);
+      if (existing) {
+        map.set(idKey, {
+          ...existing,
+          ...activity,
+          telemetry_points:
+            activity.telemetry_points && activity.telemetry_points.length > 0
+              ? activity.telemetry_points
+              : existing.telemetry_points || [],
+          hr_zone_distribution:
+            activity.hr_zone_distribution && Object.keys(activity.hr_zone_distribution).length > 0
+              ? activity.hr_zone_distribution
+              : existing.hr_zone_distribution,
+          avg_watts_est: activity.avg_watts_est ?? existing.avg_watts_est,
+          max_watts_est: activity.max_watts_est ?? existing.max_watts_est,
+          normalized_power: activity.normalized_power ?? existing.normalized_power,
+          max_cadence: activity.max_cadence ?? existing.max_cadence,
+          cadence_distribution: activity.cadence_distribution ?? existing.cadence_distribution,
+        });
+      } else {
+        map.set(idKey, activity);
+      }
+    }
+
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+    );
+
+    try {
+      fs.writeFileSync(file, JSON.stringify(merged, null, 2), 'utf-8');
+    } catch (writeErr) {
+      console.error('Error writing batch activities to disk:', writeErr);
+    }
+
+    return merged;
   } catch (error) {
-    console.error('Error saving activity:', error);
-    return activity;
+    console.error('Error in saveActivitiesBatch:', error);
+    return newActivities;
   }
+}
+
+export function saveActivity(activity: StoredActivity): StoredActivity {
+  const merged = saveActivitiesBatch([activity]);
+  return merged.find(a => String(a.id) === String(activity.id)) || activity;
 }
 
 export function getActivityById(id: string): StoredActivity | null {

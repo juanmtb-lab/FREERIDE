@@ -30,13 +30,13 @@ export async function POST(request: Request) {
     try {
       body = await request.json();
     } catch {}
-    if (getStoredActivities().length === 0) {
+    if (getStoredActivities().length === 0 && (!body.activities || body.activities.length === 0)) {
       try {
         await syncStravaActivitiesLive({ request });
       } catch {}
     }
     const query = body.query;
-    const coachResponse = await queryAiCoach(query);
+    const coachResponse = await queryAiCoach(query, body.activities);
     return NextResponse.json(coachResponse);
   } catch (error: any) {
     console.error('Error querying AI Coach:', error);

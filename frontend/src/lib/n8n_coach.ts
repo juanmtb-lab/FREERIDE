@@ -11,6 +11,19 @@ export interface RiderFitnessMetrics {
   weeklyElevGainM: number;
   avgHrLastRides: number;
   avgWattsLastRides: number;
+  // Historical Training Profile across all Strava activities
+  totalActivities?: number;
+  riderProfileType?: string;
+  dominantDiscipline?: string;
+  avgDistanceKm?: number;
+  maxDistanceKm?: number;
+  avgElevationM?: number;
+  maxElevationM?: number;
+  elevRatioMPerKm?: number;
+  avgSpeedKmh?: number;
+  maxObservedHr?: number;
+  avgCadenceRpm?: number;
+  ridesPerWeekAvg?: number;
 }
 
 export interface CoachResponse {
@@ -35,12 +48,24 @@ export function calculateRiderFitnessMetrics(activities: StoredActivity[]): Ride
       ctl: 0,
       atl: 0,
       tsb: 0,
-      formStatus: 'Sincroniza Garmin Connect para calcular tu carga',
+      formStatus: 'Sincroniza Strava para analizar tu perfil de entrenamiento',
       formColor: '#10B981',
       weeklyDistanceKm: 0,
       weeklyElevGainM: 0,
       avgHrLastRides: 0,
-      avgWattsLastRides: 0
+      avgWattsLastRides: 0,
+      totalActivities: 0,
+      riderProfileType: 'Pendiente de sincronizar historial Strava',
+      dominantDiscipline: 'Sin datos',
+      avgDistanceKm: 0,
+      maxDistanceKm: 0,
+      avgElevationM: 0,
+      maxElevationM: 0,
+      elevRatioMPerKm: 0,
+      avgSpeedKmh: 0,
+      maxObservedHr: 0,
+      avgCadenceRpm: 0,
+      ridesPerWeekAvg: 0
     };
   }
 
@@ -53,20 +78,55 @@ export function calculateRiderFitnessMetrics(activities: StoredActivity[]): Ride
   let weeklyElev = 0;
   let sumHr = 0;
   let hrCount = 0;
+  let maxObservedHr = 0;
   let sumWatts = 0;
   let wattsCount = 0;
+  let sumCadence = 0;
+  let cadenceCount = 0;
+
+  let totalDistKm = 0;
+  let maxDistKm = 0;
+  let totalElevM = 0;
+  let maxElevM = 0;
+  let sumSpeed = 0;
+  let speedCount = 0;
+  let mtbCount = 0;
+  let roadCount = 0;
+
+  let oldestTime = now;
+  let newestTime = 0;
 
   activities.forEach(act => {
     const actTime = new Date(act.start_time).getTime();
+    if (actTime < oldestTime) oldestTime = actTime;
+    if (actTime > newestTime) newestTime = actTime;
+
     const daysAgo = Math.max(0, (now - actTime) / oneDay);
 
-    const durationMin = act.moving_time_sec / 60;
-    const avgSpeed = act.avg_speed_kmh || 24;
+    const distKm = (act.total_distance_m || 0) / 1000;
     const elevGain = act.elevation_gain_m || 0;
+    const durationMin = (act.moving_time_sec || 0) / 60;
+    const avgSpeed = act.avg_speed_kmh || 20;
+
+    totalDistKm += distKm;
+    if (distKm > maxDistKm) maxDistKm = distKm;
+    totalElevM += elevGain;
+    if (elevGain > maxElevM) maxElevM = elevGain;
+
+    if (act.avg_speed_kmh && act.avg_speed_kmh > 0) {
+      sumSpeed += act.avg_speed_kmh;
+      speedCount++;
+    }
+
+    if (act.activity_type === 'MOUNTAIN_BIKE') {
+      mtbCount++;
+    } else {
+      roadCount++;
+    }
 
     const intensity = Math.min(
       1.2,
-      (avgSpeed / 28) * 0.7 + (elevGain / Math.max(1, act.total_distance_m / 1000)) * 0.015
+      (avgSpeed / 26) * 0.7 + (elevGain / Math.max(1, distKm)) * 0.015
     );
     const tss = Math.round((durationMin * Math.pow(intensity, 2) * 100) / 60);
 
@@ -75,23 +135,83 @@ export function calculateRiderFitnessMetrics(activities: StoredActivity[]): Ride
     }
     if (daysAgo <= 7) {
       totalTss7Days += tss;
-      weeklyDist += act.total_distance_m / 1000;
-      weeklyElev += act.elevation_gain_m;
+      weeklyDist += distKm;
+      weeklyElev += elevGain;
     }
 
-    if (act.avg_hr) {
+    if (act.avg_hr && act.avg_hr > 0) {
       sumHr += act.avg_hr;
       hrCount++;
     }
-    if (act.avg_watts_est) {
+    if (act.max_hr && act.max_hr > maxObservedHr) {
+      maxObservedHr = act.max_hr;
+    }
+    if (act.avg_watts_est && act.avg_watts_est > 0) {
       sumWatts += act.avg_watts_est;
       wattsCount++;
     }
+    if (act.avg_cadence && act.avg_cadence > 0) {
+      sumCadence += act.avg_cadence;
+      cadenceCount++;
+    }
   });
+
+  // If the user hasn't ridden in the last 42 days, compute CTL/ATL relative to their most recent active window so historical profile is always meaningful
+  if (totalTss42Days === 0 && newestTime > 0) {
+    activities.forEach(act => {
+      const actTime = new Date(act.start_time).getTime();
+      const daysFromLast = Math.max(0, (newestTime - actTime) / oneDay);
+      const distKm = (act.total_distance_m || 0) / 1000;
+      const elevGain = act.elevation_gain_m || 0;
+      const durationMin = (act.moving_time_sec || 0) / 60;
+      const avgSpeed = act.avg_speed_kmh || 20;
+      const intensity = Math.min(
+        1.2,
+        (avgSpeed / 26) * 0.7 + (elevGain / Math.max(1, distKm)) * 0.015
+      );
+      const tss = Math.round((durationMin * Math.pow(intensity, 2) * 100) / 60);
+      if (daysFromLast <= 42) totalTss42Days += tss;
+      if (daysFromLast <= 7) {
+        totalTss7Days += tss;
+        weeklyDist += distKm;
+        weeklyElev += elevGain;
+      }
+    });
+  }
 
   const ctl = Math.round(totalTss42Days / 42);
   const atl = Math.round(totalTss7Days / 7);
   const tsb = ctl - atl;
+
+  const totalCount = activities.length;
+  const avgDistanceKm = parseFloat((totalDistKm / totalCount).toFixed(1));
+  const avgElevationM = Math.round(totalElevM / totalCount);
+  const elevRatioMPerKm = parseFloat((totalElevM / Math.max(1, totalDistKm)).toFixed(1));
+  const avgSpeedKmh = speedCount > 0 ? parseFloat((sumSpeed / speedCount).toFixed(1)) : 0;
+  const avgCadenceRpm = cadenceCount > 0 ? Math.round(sumCadence / cadenceCount) : 0;
+
+  const spanWeeks = Math.max(1, (Math.max(now, newestTime) - oldestTime) / (7 * oneDay));
+  const ridesPerWeekAvg = parseFloat((totalCount / spanWeeks).toFixed(1));
+
+  const mtbPct = Math.round((mtbCount / totalCount) * 100);
+  const roadPct = 100 - mtbPct;
+  const dominantDiscipline =
+    mtbPct >= 70
+      ? `Especialista MTB (${mtbPct}% MTB / ${roadPct}% Carretera)`
+      : roadPct >= 70
+      ? `Especialista Carretera (${roadPct}% Carretera / ${mtbPct}% MTB)`
+      : `Ciclista Híbrido (${mtbPct}% MTB / ${roadPct}% Carretera)`;
+
+  let riderProfileType = 'Ciclista Polivalente de Resistencia';
+  if (elevRatioMPerKm >= 18) {
+    riderProfileType = mtbPct >= 50 ? 'Escalador Puro & Trail MTB' : 'Escalador de Alta Montaña';
+  } else if (avgDistanceKm >= 55) {
+    riderProfileType = 'Especialista en Gran Fondo & Resistencia Aeróbica';
+  } else if (avgSpeedKmh >= 26) {
+    riderProfileType = 'Rodador de Potencia & Ritmo Sostenido';
+  } else if (mtbPct >= 60) {
+    riderProfileType = 'Rider XC / Maratón MTB';
+  }
 
   let formStatus = 'Forma Épica - Pico de Rendimiento';
   let formColor = '#3B82F6';
@@ -119,7 +239,19 @@ export function calculateRiderFitnessMetrics(activities: StoredActivity[]): Ride
     weeklyDistanceKm: parseFloat(weeklyDist.toFixed(1)),
     weeklyElevGainM: Math.round(weeklyElev),
     avgHrLastRides: hrCount > 0 ? Math.round(sumHr / hrCount) : 0,
-    avgWattsLastRides: wattsCount > 0 ? Math.round(sumWatts / wattsCount) : 0
+    avgWattsLastRides: wattsCount > 0 ? Math.round(sumWatts / wattsCount) : 0,
+    totalActivities: totalCount,
+    riderProfileType,
+    dominantDiscipline,
+    avgDistanceKm,
+    maxDistanceKm: parseFloat(maxDistKm.toFixed(1)),
+    avgElevationM,
+    maxElevationM: Math.round(maxElevM),
+    elevRatioMPerKm,
+    avgSpeedKmh,
+    maxObservedHr: maxObservedHr || 185,
+    avgCadenceRpm,
+    ridesPerWeekAvg
   };
 }
 
@@ -211,8 +343,14 @@ ${recoveryAdvice}`;
   };
 }
 
-export async function queryAiCoach(userQuery?: string): Promise<CoachResponse> {
-  const activities = getStoredActivities();
+export async function queryAiCoach(
+  userQuery?: string,
+  clientActivities?: StoredActivity[]
+): Promise<CoachResponse> {
+  let activities = getStoredActivities();
+  if ((!activities || activities.length === 0) && Array.isArray(clientActivities) && clientActivities.length > 0) {
+    activities = clientActivities;
+  }
   const settings = getSettings();
   const metrics = calculateRiderFitnessMetrics(activities);
 
@@ -223,9 +361,9 @@ export async function queryAiCoach(userQuery?: string): Promise<CoachResponse> {
       const payload = {
         event: 'COACH_ANALYSIS_REQUEST',
         timestamp: new Date().toISOString(),
-        user_query: userQuery || 'Generar plan de entrenamiento semanal adaptativo',
+        user_query: userQuery || 'Generar perfil de entrenamiento y plan semanal adaptativo',
         rider_metrics: metrics,
-        recent_activities: activities.slice(0, 15).map(a => ({
+        recent_activities: activities.slice(0, 25).map(a => ({
           id: a.id,
           title: a.title,
           type: a.activity_type,
@@ -261,40 +399,50 @@ export async function queryAiCoach(userQuery?: string): Promise<CoachResponse> {
     }
   }
 
+  const maxHr = metrics.maxObservedHr || 185;
+  const z2Low = Math.round(maxHr * 0.62);
+  const z2High = Math.round(maxHr * 0.73);
+  const z4Low = Math.round(maxHr * 0.82);
+  const z4High = Math.round(maxHr * 0.91);
+
   const isQuestion = !!userQuery && userQuery.trim().length > 0;
   let contentEs = '';
 
   if (isQuestion) {
-    contentEs = `### 🚴 Diagnóstico del Entrenador AI FREERIDE
+    contentEs = `### 🚴 Diagnóstico Personalizado del Entrenador AI FREERIDE
 
 **Tu Consulta:** "${userQuery}"
 
-**Análisis Fisiológico de Carga (Historial Real de Strava):**
-- **Estado de Forma (CTL):** ${metrics.ctl} TSS
-- **Fatiga Aguda (ATL):** ${metrics.atl} TSS
-- **Balance de Frescura (TSB):** ${metrics.tsb} TSS (${metrics.formStatus})
-- **Volumen Reciente (7 días):** ${metrics.weeklyDistanceKm} km con +${metrics.weeklyElevGainM} m de desnivel positivo.
+**Tu Perfil de Entrenamiento Real (Basado en ${metrics.totalActivities || 0} actividades de Strava):**
+- **Arquetipo Ciclista Detectado:** ${metrics.riderProfileType} (${metrics.dominantDiscipline})
+- **Distancia Media por Salida:** ${metrics.avgDistanceKm} km (Récord histórico: ${metrics.maxDistanceKm} km)
+- **Desnivel Medio:** +${metrics.avgElevationM} m por ruta (${metrics.elevRatioMPerKm} m/km de ratio vertical | Máximo: +${metrics.maxElevationM} m)
+- **Frecuencia Histórica:** ${metrics.ridesPerWeekAvg} salidas/semana | Velocidad media: ${metrics.avgSpeedKmh} km/h
+- **Carga Fisiológica Actual:** CTL ${metrics.ctl} | ATL ${metrics.atl} | TSB ${metrics.tsb} (${metrics.formStatus})
 
-**Recomendación Específica del Entrenador:**
-1. **Zonas de Frecuencia Cardíaca Prioritarias:** Según tu historial de Strava (${metrics.avgHrLastRides > 0 ? `media reciente de ${metrics.avgHrLastRides} bpm` : 'sensor cardíaco'}), mantén el 75% del volumen semanal en **Zona 2** para optimizar la base aeróbica sin disparar la fatiga aguda (ATL).
-2. **Estructura de Series:** Incluye 1 sesión semanal de intervalos en Zona 4 (3 bloques de 10 min al umbral con 5 min de recuperación activa en Zona 1).
-3. **Cadencia Eficiente:** Mantén entre **85 y 92 rpm** en llano y >75 rpm en subida para proteger la musculatura e incrementar la eficiencia mecánica.`;
+**Recomendación Específica para tu Perfil:**
+1. **Control de Zonas Cardíacas (sobre tu FC Máx registrada de ${maxHr} bpm):** Mantén el 75% de tu volumen semanal en **Zona 2 (${z2Low}-${z2High} bpm)** para consolidar tu eficiencia aeróbica sin disparar la fatiga aguda.
+2. **Trabajo Específico de Umbral:** Dado tu ratio de desnivel de **${metrics.elevRatioMPerKm} m/km**, incluye 1 sesión semanal de series en subida en **Zona 4 (${z4Low}-${z4High} bpm)** (3×10 min con 5 min de recuperación) para elevar tu potencia sostenida en ascensión.
+3. **Progresión de Fondo:** Tu distancia media actual es de **${metrics.avgDistanceKm} km**. Para dar un salto de calidad en resistencia, programa una salida larga de fin de semana de **${Math.round(Math.max(45, (metrics.avgDistanceKm || 35) * 1.25))} km** manteniendo hidratación y 60g de carbohidratos por hora.`;
   } else {
-    contentEs = `### 🏆 Diagnóstico Semanal del Entrenador Personal AI
+    contentEs = `### 🏆 Tu Perfil de Entrenamiento Histórico & Recomendaciones (Strava API v3)
 
-**Estado Fisiológico Actual (Strava API v3):**
-- **Fitness (CTL):** ${metrics.ctl} puntos
-- **Fatiga Acumulada (ATL):** ${metrics.atl} puntos
-- **Balance de Frescura (TSB):** ${metrics.tsb} puntos (${metrics.formStatus})
-- **Pulsaciones Medias Recientes:** ${metrics.avgHrLastRides > 0 ? `${metrics.avgHrLastRides} bpm` : 'Sincronizado con Strava'}
-- **Total Actividades Analizadas:** ${activities.length} entrenamientos reales
+**1. Radiografía de tu Historial en Strava (${metrics.totalActivities || 0} actividades analizadas):**
+- **Perfil de Ciclista:** **${metrics.riderProfileType}**
+- **Distribución de Disciplinas:** ${metrics.dominantDiscipline}
+- **Volumen por Salida:** Media de **${metrics.avgDistanceKm} km** y **+${metrics.avgElevationM} m** por entrenamiento (Ruta más larga: **${metrics.maxDistanceKm} km** | Mayor desnivel: **+${metrics.maxElevationM} m**).
+- **Exigencia Vertical:** **${metrics.elevRatioMPerKm} m/km** a una velocidad media histórica de **${metrics.avgSpeedKmh} km/h**.
+- **Respuesta Fisiológica Real:** FC media histórica de **${metrics.avgHrLastRides > 0 ? `${metrics.avgHrLastRides} bpm` : 'registrada en Strava'}** (FC Máx observada: **${maxHr} bpm**)${metrics.avgWattsLastRides > 0 ? ` | Potencia media: **${metrics.avgWattsLastRides} W**` : ''}${metrics.avgCadenceRpm ? ` | Cadencia media: **${metrics.avgCadenceRpm} rpm**` : ''}.
+- **Estado de Carga (CTL / ATL / TSB):** Fitness **${metrics.ctl}** | Fatiga **${metrics.atl}** | Balance **${metrics.tsb}** (${metrics.formStatus}).
 
-**Planificación Adaptativa Semanal:**
-Tu carga de entrenamiento se encuentra en un estado **${metrics.tsb >= 0 ? 'óptimo de frescura para asimilar series de intensidad' : 'de carga acumulada donde priorizar la Zona 2 y el descanso es clave'}**.`;
+**2. Recomendaciones Clave Según tu Perfil:**
+- **Polarización del Entrenamiento:** Por tu perfil (**${metrics.riderProfileType}**), evita rodar siempre a ritmo medio ("zona gris" en Zona 3). Dedica tus salidas entre semana a **Zona 2 estricta (${z2Low}-${z2High} bpm)** para ganar base aeróbica y reserva las energías para 1 día de series en **Zona 4 (${z4Low}-${z4High} bpm)** y la salida larga del fin de semana.
+- **Optimización en Subidas (${metrics.elevRatioMPerKm} m/km):** En puertos y repechos, busca mantener una cadencia ágil (>78 rpm en subida, 88-92 rpm en llano) para retrasar la fatiga muscular periférica.
+- **Objetivo de Volumen Progresivo:** Partiendo de tu media de **${metrics.avgDistanceKm} km/salida**, el plan inferior ajusta las duraciones y zonas exactamente a tu fisiología actual.`;
   }
 
   return {
-    title: 'Entrenador Personal AI FREERIDE - Diagnóstico & Planificación',
+    title: 'Entrenador Personal AI FREERIDE - Perfil & Planificación',
     source: 'BUILTIN_AI_ENGINE',
     metrics,
     content_es: contentEs,
@@ -303,62 +451,76 @@ Tu carga de entrenamiento se encuentra en un estado **${metrics.tsb >= 0 ? 'ópt
   };
 }
 
-function n8nnWeeklyPlanFallback(_metrics: RiderFitnessMetrics) {
+function n8nnWeeklyPlanFallback(metrics: RiderFitnessMetrics) {
+  const maxHr = metrics.maxObservedHr || 185;
+  const z1Low = Math.round(maxHr * 0.50);
+  const z1High = Math.round(maxHr * 0.60);
+  const z2Low = Math.round(maxHr * 0.62);
+  const z2High = Math.round(maxHr * 0.73);
+  const z3Low = Math.round(maxHr * 0.74);
+  const z3High = Math.round(maxHr * 0.82);
+  const z4Low = Math.round(maxHr * 0.83);
+  const z4High = Math.round(maxHr * 0.91);
+
+  const avgDist = metrics.avgDistanceKm || 35;
+  const baseDurMin = Math.max(60, Math.min(120, Math.round((avgDist / Math.max(18, metrics.avgSpeedKmh || 22)) * 60)));
+  const longRideMin = Math.max(110, Math.min(240, Math.round(baseDurMin * 1.45)));
+
   return [
     {
       day: 'Lunes',
       title: 'Recuperación Activa o Descanso',
-      description: 'Rodaje muy suave regenerativo o descanso total. Mantén pulsaciones estrictamente en Zona 1 (<120 bpm).',
-      target_hr_zone: 'Zona 1 (100 - 120 bpm)',
+      description: 'Rodaje muy suave regenerativo o descanso total para asimilar la carga del fin de semana.',
+      target_hr_zone: `Zona 1 (${z1Low} - ${z1High} bpm)`,
       duration_min: 45,
       intensity: 'Baja' as const
     },
     {
       day: 'Martes',
       title: 'Resistencia Aeróbica Base (Zona 2)',
-      description: 'Rodaje continuo a cadencia ágil (88-92 rpm). Desarrollo de capacidad aeróbica y eficiencia lipolítica.',
-      target_hr_zone: 'Zona 2 (122 - 142 bpm)',
-      duration_min: 90,
+      description: `Rodaje continuo adaptado a tu perfil (${metrics.riderProfileType || 'Ciclista'}). Mantén cadencia ágil (88-92 rpm) sin superar el techo aeróbico.`,
+      target_hr_zone: `Zona 2 (${z2Low} - ${z2High} bpm)`,
+      duration_min: baseDurMin,
       intensity: 'Media' as const
     },
     {
       day: 'Miércoles',
-      title: 'Intervalos a Umbral / Subida',
-      description: '3 series de 10 minutos al 95-100% del umbral anaeróbico con 5 minutos de recuperación entre series.',
-      target_hr_zone: 'Zona 4 (160 - 175 bpm)',
+      title: 'Series de Umbral & Fuerza en Subida',
+      description: `3 bloques de 10 minutos al umbral anaeróbico en subida (adaptado a tu ratio de ${metrics.elevRatioMPerKm || 12} m/km) con 5 min de recuperación en Z1.`,
+      target_hr_zone: `Zona 4 (${z4Low} - ${z4High} bpm)`,
       duration_min: 75,
       intensity: 'Alta' as const
     },
     {
       day: 'Jueves',
-      title: 'Rodaje Suave de Transición',
-      description: 'Salida para soltar piernas en terreno llano. Cadencia fluida sin superar Zona 2.',
-      target_hr_zone: 'Zona 2 (120 - 138 bpm)',
+      title: 'Rodaje Aeróbico de Transición',
+      description: 'Salida fluida en terreno llano o ligeramente ondulado para oxigenar piernas manteniendo pulsaciones controladas.',
+      target_hr_zone: `Zona 2 (${z2Low} - ${z2High} bpm)`,
       duration_min: 60,
       intensity: 'Baja' as const
     },
     {
       day: 'Viernes',
-      title: 'Descanso Total',
-      description: 'Hidratación, carga de carbohidratos complejos y descanso neuromuscular previo al fin de semana.',
-      target_hr_zone: 'Descanso',
+      title: 'Descanso Total & Supercompensación',
+      description: 'Hidratación, movilidad articular y descanso neuromuscular previo al bloque de volumen del fin de semana.',
+      target_hr_zone: 'Descanso Total',
       duration_min: 0,
       intensity: 'Descanso' as const
     },
     {
       day: 'Sábado',
-      title: 'Ruta de Fondo en Carretera',
-      description: 'Salida principal de fondo con ritmo sostenido en llano y progresivo en ascensiones.',
-      target_hr_zone: 'Zona 2 a Zona 3 (135 - 158 bpm)',
-      duration_min: 150,
+      title: 'Salida de Gran Fondo (Resistencia Específica)',
+      description: `Ruta larga progresiva buscando superar tu media habitual de ${avgDist} km con ritmo sostenido en ascensiones.`,
+      target_hr_zone: `Zona 2 a Zona 3 (${z2Low} - ${z3High} bpm)`,
+      duration_min: longRideMin,
       intensity: 'Alta' as const
     },
     {
       day: 'Domingo',
       title: 'Salida MTB / Técnica & Cambios de Ritmo',
-      description: 'Ruta por montaña o terreno variado trabajando control técnico y estímulos cortos.',
-      target_hr_zone: 'Zona 3 a Zona 4 (145 - 172 bpm)',
-      duration_min: 120,
+      description: 'Ruta por terreno variado o montaña trabajando control técnico, agilidad y estímulos cortos en repechos.',
+      target_hr_zone: `Zona 3 a Zona 4 (${z3Low} - ${z4High} bpm)`,
+      duration_min: Math.round(baseDurMin * 1.15),
       intensity: 'Competición' as const
     }
   ];
