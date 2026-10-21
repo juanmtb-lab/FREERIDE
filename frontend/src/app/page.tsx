@@ -433,16 +433,14 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-dark-bg/85 border border-orange-500/20 text-xs text-gray-300 leading-relaxed space-y-1.5">
-            <p className="font-bold text-orange-400 flex items-center space-x-1.5">
+          <div className="p-4 rounded-2xl bg-dark-bg/85 border border-orange-500/20 text-xs text-gray-300 leading-relaxed space-y-1">
+            <p className="font-bold text-orange-400 flex items-center space-x-1.5 mb-1">
               <BrainCircuit className="w-4 h-4" />
-              <span>Recomendación Directa de tu Entrenador según tu Historial:</span>
+              <span>Pauta Directa según tu Historial:</span>
             </p>
-            <p>
-              Con una media histórica de <strong className="text-white">{avgDistKm} km</strong> y{" "}
-              <strong className="text-white">+{avgElevM} m ({elevRatio} m/km)</strong> por salida, para seguir evolucionando debes polarizar tus entrenamientos: realiza el <strong className="text-white">75% de tus rodajes en Zona 2 aeróbica ({z2Low}-{z2High} bpm)</strong>, incorpora <strong className="text-white">1 sesión semanal de series en subida en Zona 4 ({z4Low}-{z4High} bpm, 3×10 min)</strong> y programa una salida larga de fin de semana de{" "}
-              <strong className="text-orange-400">{Math.round(Math.max(45, Number(avgDistKm) * 1.25))} km</strong>.
-            </p>
+            <p>• <strong className="text-white">Base Z2 (75% de tus salidas):</strong> Rodar entre <strong className="text-emerald-400">{z2Low}-{z2High} bpm</strong> (bajar de tu media de {avgHistoricalHr} bpm).</p>
+            <p>• <strong className="text-white">Calidad Z4 (1 día/sem):</strong> 3×10 min en subida a <strong className="text-amber-400">{z4Low}-{z4High} bpm</strong> (rec: 5m suave).</p>
+            <p>• <strong className="text-white">Fondo Sábado:</strong> Objetivo <strong className="text-orange-400">{Math.round(Math.max(45, Number(avgDistKm) * 1.25))} km</strong> a 88-90 rpm.</p>
           </div>
         </div>
       )}

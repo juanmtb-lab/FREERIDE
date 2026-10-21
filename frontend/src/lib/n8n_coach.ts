@@ -271,6 +271,8 @@ export async function analyzeSingleActivityWithCoach(activity: StoredActivity): 
       const payload = {
         event: 'SINGLE_ACTIVITY_ANALYSIS',
         timestamp: new Date().toISOString(),
+        response_format_instruction:
+          'Responde SIEMPRE en español en máximo 4 líneas cortas con viñetas. Directo al grano: métricas clave y pauta concreta para mañana.',
         activity: {
           id: activity.id,
           title: activity.title,
@@ -301,7 +303,7 @@ export async function analyzeSingleActivityWithCoach(activity: StoredActivity): 
           user_id: activity.user_id,
           activity_id: activity.id,
           insight_type: 'N8N_ACTIVITY_ANALYSIS',
-          title: n8nData.title || `Análisis Fisiológico N8N: ${activity.title}`,
+          title: n8nData.title || `Diagnóstico Rápido: ${activity.title}`,
           content_es: n8nData.content_es || n8nData.output || JSON.stringify(n8nData, null, 2),
           created_at: new Date().toISOString()
         };
@@ -313,31 +315,25 @@ export async function analyzeSingleActivityWithCoach(activity: StoredActivity): 
 
   const zonesSummary =
     Object.keys(z).length > 0
-      ? `Z1: ${z.Z1 ?? z.z1 ?? 0}% | Z2: ${z.Z2 ?? z.z2 ?? 0}% | Z3: ${z.Z3 ?? z.z3 ?? 0}% | Z4: ${z.Z4 ?? z.z4 ?? 0}% | Z5: ${z.Z5 ?? z.z5 ?? 0}%`
-      : 'Calculado según frecuencia cardíaca media y máxima';
+      ? `Z1 ${z.Z1 ?? z.z1 ?? 0}% · Z2 ${z.Z2 ?? z.z2 ?? 0}% · Z3 ${z.Z3 ?? z.z3 ?? 0}% · Z4 ${z.Z4 ?? z.z4 ?? 0}% · Z5 ${z.Z5 ?? z.z5 ?? 0}%`
+      : 'Segun pulso medio/máx';
 
-  const z4z5 = (Number(z.Z4 ?? z.z4 ?? 0) + Number(z.Z5 ?? z.z5 ?? 0));
+  const z4z5 = Number(z.Z4 ?? z.z4 ?? 0) + Number(z.Z5 ?? z.z5 ?? 0);
   const recoveryAdvice =
     z4z5 > 25
-      ? 'Sesión de alta exigencia glucolítica (>25% en Z4-Z5). Se recomienda 24-36h de rodaje regenerativo en Zona 1/2 y reposición de 1.2g/kg de carbohidratos.'
-      : 'Carga aeróbica controlada predominantemente en Zonas 2 y 3. Excelente estímulo oxidativo; mañana puedes afrontar una sesión de intensidad o fondo sin fatiga residual excesiva.';
+      ? 'Alta carga en Z4-Z5 (>25%). Mañana: 45-60 min regenerativos en Z1 (<115 bpm) o descanso.'
+      : 'Carga aeróbica controlada (Z2-Z3). Mañana estás listo para meter series de umbral o salida de fondo.';
 
-  const contentEs = `📋 Diagnóstico Fisiológico de la Salida: "${activity.title}"
-
-• Distancia y Duración Real (Strava): ${distKm} km en ${durMin} minutos (${activity.avg_speed_kmh} km/h media, máx ${activity.max_speed_kmh} km/h).
-• Desnivel Acumulado: +${activity.elevation_gain_m} m (${Math.round(activity.elevation_gain_m / Math.max(1, Number(distKm)))} m/km de ratio vertical).
-• Respuesta Cardíaca: ${hrText}${activity.avg_cadence ? ` | Cadencia media: ${activity.avg_cadence} rpm` : ''}.
-• Distribución en Zonas Strava: ${zonesSummary}.
-
-💡 Recomendación del Entrenador AI:
-${recoveryAdvice}`;
+  const contentEs = `• **Resumen:** ${distKm} km (${durMin} min) · +${activity.elevation_gain_m} m · ${activity.avg_speed_kmh} km/h.
+• **Fisiología:** FC ${hrText}${activity.avg_cadence ? ` · ${activity.avg_cadence} rpm` : ''} (${zonesSummary}).
+• **Pauta Mañana:** ${recoveryAdvice}`;
 
   return {
     id: `insight-${activity.id}`,
     user_id: activity.user_id,
     activity_id: activity.id,
     insight_type: 'ACTIVITY_ANALYSIS',
-    title: `Análisis Fisiológico: ${activity.title}`,
+    title: `Diagnóstico Rápido: ${activity.title}`,
     content_es: contentEs,
     created_at: new Date().toISOString()
   };
@@ -361,9 +357,11 @@ export async function queryAiCoach(
       const payload = {
         event: 'COACH_ANALYSIS_REQUEST',
         timestamp: new Date().toISOString(),
-        user_query: userQuery || 'Generar perfil de entrenamiento y plan semanal adaptativo',
+        response_format_instruction:
+          'Responde SIEMPRE en español en máximo 4-5 líneas cortas con viñetas. Sé ultra específico con duraciones (min), pulsaciones (bpm) y cadencia (rpm). Cero introducciones ni texto largo.',
+        user_query: userQuery || 'Resumen corto de perfil y entreno clave de hoy',
         rider_metrics: metrics,
-        recent_activities: activities.slice(0, 25).map(a => ({
+        recent_activities: activities.slice(0, 20).map(a => ({
           id: a.id,
           title: a.title,
           type: a.activity_type,
@@ -386,7 +384,7 @@ export async function queryAiCoach(
       if (res.ok) {
         const n8nData = await res.json();
         return {
-          title: n8nData.title || 'Entrenador Personal AI FREERIDE (Vía N8N Workflow)',
+          title: n8nData.title || 'Ficha Directa del Entrenador AI (N8N)',
           source: 'N8N_WORKFLOW',
           metrics,
           content_es: n8nData.content_es || n8nData.output || JSON.stringify(n8nData, null, 2),
@@ -416,69 +414,40 @@ export async function queryAiCoach(
   let contentEs = '';
 
   if (isQuestion && (qLower.includes('ftp') || qLower.includes('test') || qLower.includes('umbral'))) {
-    contentEs = `### 🎯 Protocolo de Test FTP & Umbral (LTHR) Adaptado a tu Perfil
-
-**Por qué este test está diseñado específicamente para ti:**
-Analizando tus **${metrics.totalActivities || 249} salidas en Strava** (**${metrics.dominantDiscipline}**, media de **${metrics.avgDistanceKm} km**, ratio de **${metrics.elevRatioMPerKm} m/km**, **FC Media ${metrics.avgHrLastRides} bpm** y **FC Máxima real de ${maxHr} bpm**), el protocolo ideal para ti es el **Test de 20 Minutos de Allen & Coggan en subida tendida constante (3% - 5%) o llano limpio**.
-
----
-
-#### 📋 Estructura Exacta de la Sesión (Duración Total: 65 min)
-
-1. **Fase 1 · Calentamiento Progresivo (20 min):**
-   - Rodaje suave aumentando progresivamente de **Zona 1 (${z1Low}-${z1High} bpm)** a **Zona 2 (${z2Low}-${z2High} bpm)** con cadencia fluida (85-90 rpm).
-2. **Fase 2 · Activación Neuromuscular (3 × 1 min):**
-   - Realiza 3 aceleraciones de 1 minuto a cadencia alta (**100-105 rpm**) sin llegar a bloquear las piernas, recuperando 1 minuto suave en Zona 1 entre cada una.
-3. **Fase 3 · Esfuerzo de Desbloqueo / Vaciado Anaeróbico (5 min fuertes + 10 min suaves):**
-   - **5 minutos a ritmo alto en Zona 4-5 (${z4Low}-${z5Low} bpm):** Imprescindible para agotar tu reserva anaeróbica (AWC) y evitar que los primeros minutos del test falseen tu FTP por exceso.
-   - **10 minutos de recuperación activa en Zona 1 (<${z1High} bpm)** hasta que tu pulso baje de **${z1High} bpm**.
-4. **Fase 4 · 🔥 BLOQUE CENTRAL: TEST FTP 20 MINUTOS (Esfuerzo Máximo Sostenido):**
-   - **Minutos 0 a 5 (Control de salida):** Arranca de menos a más. Clava tu pulso entre **${z4Low} y ${estLthr} bpm** sin cebarte en los primeros 3 minutos.
-   - **Minutos 5 a 15 (Crucero de Umbral):** Estabiliza la cadencia (**82-88 rpm** si es en subida tendida, **90-94 rpm** si es en llano) manteniendo tus pulsaciones en torno a tu umbral estimado (**${estLthr}-${z4High} bpm**).
-   - **Minutos 15 a 20 (Vaciado Final):** Incrementa progresivamente el ritmo hasta dar el 100% en los últimos 3 minutos (alcanzarás **${z4High}-${maxHr} bpm**).
-5. **Fase 5 · Enfriamiento Regenerativo (10 min):**
-   - Rodaje muy suave en **Zona 1 (<${z1High} bpm)** soltando piernas.
-
----
-
-#### 🧮 Cómo Calcular tus Zonas Exactas al Terminar:
-- **Tu FTP Oficial (W):** Multiplica la **Potencia Media de esos 20 min × 0.95** (puedes usar la calculadora interactiva que tienes justo debajo en esta misma pantalla).
-- **Tu Pulso de Umbral Lactato (LTHR):** Multiplica la **FC Media de esos 20 min × 0.95** (para tu FC Máx de **${maxHr} bpm**, tu LTHR real estará muy cerca de **${estLthr} bpm**).`;
+    contentEs = `🎯 **Test FTP 20 min (Subida constante 3-5% o llano · Total: 55 min)**
+• **1. Calentamiento (15m):** ${z1Low}-${z2High} bpm (88 rpm) + 3×1m a 100 rpm (1m suave).
+• **2. Vaciado Previo (10m):** 5m fuerte a **${z4Low}-${z5Low} bpm** + 5m suave (<${z1High} bpm).
+• **3. 🔥 BLOQUE TEST (20m):** Min 0-5 a **${z4Low}-${estLthr} bpm** → Min 5-15 a **${estLthr}-${z4High} bpm** → Min 15-20 **a tope (${z4High}-${maxHr} bpm)**.
+• **4. Resultado:** Multiplica tus W medios y bpm medios de esos 20m × **0.95** en la calculadora inferior.`;
+  } else if (isQuestion && (qLower.includes('puerto') || qLower.includes('subi') || qLower.includes('montaña') || qLower.includes('escalar'))) {
+    contentEs = `⛰️ **Sesión Específica de Puertos (75 min · Tu ratio actual: ${metrics.elevRatioMPerKm} m/km)**
+• **Calentamiento (15m):** Rodaje progresivo en Z2 (${z2Low}-${z2High} bpm) a 90 rpm.
+• **Serie Principal:** **3 × 10 min en subida (4-6%)** clavando pulso en **Z4 (${z4Low}-${z4High} bpm)** a 78-82 rpm sentado (Rec: 5m bajando/llano a <${z1High} bpm).
+• **Vuelta a la calma (15m):** Soltar piernas en Z1 (<${z1High} bpm).`;
+  } else if (isQuestion && (qLower.includes('100') || qLower.includes('larga') || qLower.includes('fondo') || qLower.includes('nutri') || qLower.includes('comer'))) {
+    contentEs = `🚴 **Pauta Gran Fondo +100 km (Tu récord: ${metrics.maxDistanceKm} km | Media: ${metrics.avgDistanceKm} km)**
+• **Km 0 a 60 (Ahorro):** Prohibido pasar de **${z2High} bpm (Z2)** en llano ni de **${z3High} bpm (Z3)** en subidas.
+• **Km 60 a Meta:** Sube a **Z3-Z4 (${z3Low}-${z4High} bpm)** manteniendo >82 rpm.
+• **Nutrición Exacta:** 60g HC/hora (1 gel o barrita cada 45 min desde el min 45 + 500ml sales/hora).`;
+  } else if (isQuestion && (qLower.includes('zona') || qLower.includes('pulso') || qLower.includes('frecuencia') || qLower.includes('polariza'))) {
+    contentEs = `⚡ **Tus Zonas Reales (FC Máx: ${maxHr} bpm · Umbral LTHR: ~${estLthr} bpm)**
+• **Z1 Recup:** ${z1Low}-${z1High} bpm | **Z2 Base (haz aquí el 75%):** ${z2Low}-${z2High} bpm | **Z3 Tempo:** ${z3Low}-${z3High} bpm
+• **Z4 Umbral (Series):** ${z4Low}-${z4High} bpm | **Z5 VO2max:** ${z5Low}-${maxHr} bpm
+• **Corrección clave:** Tu media histórica es **${metrics.avgHrLastRides} bpm** (Z3 baja). Rueda entre semana a **<${z2High} bpm** para ganar base sin fatiga.`;
   } else if (isQuestion) {
-    contentEs = `### 🚴 Diagnóstico Personalizado del Entrenador AI FREERIDE
-
-**Tu Consulta:** "${userQuery}"
-
-**Tu Perfil de Entrenamiento Real (Basado en ${metrics.totalActivities || 0} actividades de Strava):**
-- **Arquetipo Ciclista Detectado:** ${metrics.riderProfileType} (${metrics.dominantDiscipline})
-- **Distancia Media por Salida:** ${metrics.avgDistanceKm} km (Récord histórico: ${metrics.maxDistanceKm} km)
-- **Desnivel Medio:** +${metrics.avgElevationM} m por ruta (${metrics.elevRatioMPerKm} m/km de ratio vertical | Máximo: +${metrics.maxElevationM} m)
-- **Pulsaciones Reales en Strava:** Media histórica de **${metrics.avgHrLastRides} bpm** | Máxima registrada: **${maxHr} bpm** | Umbral LTHR estimado: **~${estLthr} bpm**
-- **Carga Fisiológica Actual:** CTL ${metrics.ctl} | ATL ${metrics.atl} | TSB ${metrics.tsb} (${metrics.formStatus})
-
-**Recomendación Específica para tu Perfil:**
-1. **Control de Zonas Cardíacas (sobre tu FC Máx registrada de ${maxHr} bpm):** Mantén el 75% de tu volumen semanal en **Zona 2 (${z2Low}-${z2High} bpm)** para consolidar tu eficiencia aeróbica sin disparar la fatiga aguda, evitando abusar de la Zona 3 (${z3Low}-${z3High} bpm).
-2. **Trabajo Específico de Umbral:** Dado tu ratio de desnivel de **${metrics.elevRatioMPerKm} m/km**, incluye 1 sesión semanal de series en subida en **Zona 4 (${z4Low}-${z4High} bpm)** (3×10 min con 5 min de recuperación) para elevar tu potencia sostenida en ascensión.
-3. **Progresión de Fondo:** Tu distancia media actual es de **${metrics.avgDistanceKm} km** (con récord de **${metrics.maxDistanceKm} km**). Para dar un salto de calidad en resistencia, programa una salida larga de fin de semana de **${Math.round(Math.max(45, (metrics.avgDistanceKm || 35) * 1.25))} km** manteniendo hidratación y 60g de carbohidratos por hora.`;
+    contentEs = `🚴 **Pauta Directa para Hoy (${metrics.riderProfileType})**
+• **Estado Actual:** TSB ${metrics.tsb} (${metrics.formStatus}) · Media histórica ${metrics.avgDistanceKm} km (${metrics.avgHrLastRides} bpm).
+• **Sesión Recomendada (75 min):** 15m Z2 (${z2Low}-${z2High} bpm) + **3×8m en Z4 (${z4Low}-${z4High} bpm a 85 rpm, rec 4m Z1)** + 15m Z1 (<${z1High} bpm).
+• **Objetivo:** Elevar tu velocidad de crucero (${metrics.avgSpeedKmh} km/h) sin acumular fatiga basura en Z3.`;
   } else {
-    contentEs = `### 🏆 Tu Perfil de Entrenamiento Histórico & Recomendaciones (Strava API v3)
-
-**1. Radiografía de tu Historial en Strava (${metrics.totalActivities || 0} actividades analizadas):**
-- **Perfil de Ciclista:** **${metrics.riderProfileType}**
-- **Distribución de Disciplinas:** ${metrics.dominantDiscipline}
-- **Volumen por Salida:** Media de **${metrics.avgDistanceKm} km** y **+${metrics.avgElevationM} m** por entrenamiento (Ruta más larga: **${metrics.maxDistanceKm} km** | Mayor desnivel: **+${metrics.maxElevationM} m**).
-- **Exigencia Vertical:** **${metrics.elevRatioMPerKm} m/km** a una velocidad media histórica de **${metrics.avgSpeedKmh} km/h**.
-- **Respuesta Fisiológica Real:** FC media histórica de **${metrics.avgHrLastRides > 0 ? `${metrics.avgHrLastRides} bpm` : 'registrada en Strava'}** (FC Máx observada: **${maxHr} bpm** | Umbral LTHR estimado: **${estLthr} bpm**)${metrics.avgWattsLastRides > 0 ? ` | Potencia media: **${metrics.avgWattsLastRides} W**` : ''}${metrics.avgCadenceRpm ? ` | Cadencia media: **${metrics.avgCadenceRpm} rpm**` : ''}.
-- **Estado de Carga (CTL / ATL / TSB):** Fitness **${metrics.ctl}** | Fatiga **${metrics.atl}** | Balance **${metrics.tsb}** (${metrics.formStatus}).
-
-**2. Recomendaciones Clave Según tu Perfil:**
-- **Polarización del Entrenamiento:** Tienes una FC media histórica de **${metrics.avgHrLastRides} bpm** sobre una máxima de **${maxHr} bpm**, lo que indica que ruedas muy cerca de la frontera entre Zona 2 y Zona 3. Dedica tus salidas entre semana a **Zona 2 estricta (${z2Low}-${z2High} bpm)** y reserva las energías para 1 día de series en **Zona 4 (${z4Low}-${z4High} bpm)** y la salida larga del fin de semana.
-- **Optimización en Subidas (${metrics.elevRatioMPerKm} m/km):** En puertos y repechos, busca mantener una cadencia ágil (>78 rpm en subida, 88-92 rpm en llano) para retrasar la fatiga muscular periférica.
-- **Protocolo de Test FTP Disponible:** Usa el generador de **Test FTP de 20 minutos** justo debajo para calibrar tus vatios (W/kg) y tu pulso de umbral exacto.`;
+    contentEs = `• **Perfil (${metrics.totalActivities || 0} rutas):** ${metrics.riderProfileType} · Media **${metrics.avgDistanceKm} km** (+${metrics.avgElevationM} m) · **${metrics.avgSpeedKmh} km/h**.
+• **Fisiología Real:** FC Media **${metrics.avgHrLastRides} bpm** | FC Máx **${maxHr} bpm** | Umbral LTHR est. **${estLthr} bpm**.
+• **Foco de Mejora:** Baja el pulso en rodajes suaves a **Z2 (${z2Low}-${z2High} bpm)** y concentra la intensidad en 1 día de **Z4 (${z4Low}-${z4High} bpm)**.
+• **Siguiente Paso:** Haz el **Test FTP de 20 min** inferior o sigue tu microciclo de 7 días.`;
   }
 
   return {
-    title: 'Entrenador Personal AI FREERIDE - Perfil & Planificación',
+    title: 'Ficha Técnica Directa · Entrenador AI',
     source: 'BUILTIN_AI_ENGINE',
     metrics,
     content_es: contentEs,
@@ -488,74 +457,74 @@ Analizando tus **${metrics.totalActivities || 249} salidas en Strava** (**${metr
 }
 
 function n8nnWeeklyPlanFallback(metrics: RiderFitnessMetrics) {
-  const maxHr = metrics.maxObservedHr || 185;
+  const maxHr = metrics.maxObservedHr || 183;
   const z1Low = Math.round(maxHr * 0.50);
   const z1High = Math.round(maxHr * 0.60);
   const z2Low = Math.round(maxHr * 0.62);
   const z2High = Math.round(maxHr * 0.73);
   const z3Low = Math.round(maxHr * 0.74);
-  const z3High = Math.round(maxHr * 0.82);
-  const z4Low = Math.round(maxHr * 0.83);
+  const z3High = Math.round(maxHr * 0.81);
+  const z4Low = Math.round(maxHr * 0.82);
   const z4High = Math.round(maxHr * 0.91);
 
   const avgDist = metrics.avgDistanceKm || 35;
-  const baseDurMin = Math.max(60, Math.min(120, Math.round((avgDist / Math.max(18, metrics.avgSpeedKmh || 22)) * 60)));
-  const longRideMin = Math.max(110, Math.min(240, Math.round(baseDurMin * 1.45)));
+  const baseDurMin = Math.max(60, Math.min(105, Math.round((avgDist / Math.max(20, metrics.avgSpeedKmh || 24)) * 60)));
+  const longRideMin = Math.max(120, Math.min(210, Math.round(baseDurMin * 1.5)));
 
   return [
     {
       day: 'Lunes',
-      title: 'Recuperación Activa o Descanso',
-      description: 'Rodaje muy suave regenerativo o descanso total para asimilar la carga del fin de semana.',
-      target_hr_zone: `Zona 1 (${z1Low} - ${z1High} bpm)`,
+      title: 'Regenerativo Z1',
+      description: `Soltar piernas en llano a 90 rpm sin pasar de ${z1High} bpm.`,
+      target_hr_zone: `Z1 (${z1Low}-${z1High} bpm)`,
       duration_min: 45,
       intensity: 'Baja' as const
     },
     {
       day: 'Martes',
-      title: 'Resistencia Aeróbica Base (Zona 2)',
-      description: `Rodaje continuo adaptado a tu perfil (${metrics.riderProfileType || 'Ciclista'}). Mantén cadencia ágil (88-92 rpm) sin superar el techo aeróbico.`,
-      target_hr_zone: `Zona 2 (${z2Low} - ${z2High} bpm)`,
+      title: 'Base Aeróbica Z2',
+      description: `Rodaje continuo a 88-92 rpm clavando pulso entre ${z2Low} y ${z2High} bpm.`,
+      target_hr_zone: `Z2 (${z2Low}-${z2High} bpm)`,
       duration_min: baseDurMin,
       intensity: 'Media' as const
     },
     {
       day: 'Miércoles',
-      title: 'Series de Umbral & Fuerza en Subida',
-      description: `3 bloques de 10 minutos al umbral anaeróbico en subida (adaptado a tu ratio de ${metrics.elevRatioMPerKm || 12} m/km) con 5 min de recuperación en Z1.`,
-      target_hr_zone: `Zona 4 (${z4Low} - ${z4High} bpm)`,
+      title: 'Series Umbral Z4 (3×10m)',
+      description: `15m Z2 + 3×10 min subida al umbral (${z4Low}-${z4High} bpm, rec 5m Z1) + 10m Z1.`,
+      target_hr_zone: `Z4 (${z4Low}-${z4High} bpm)`,
       duration_min: 75,
       intensity: 'Alta' as const
     },
     {
       day: 'Jueves',
-      title: 'Rodaje Aeróbico de Transición',
-      description: 'Salida fluida en terreno llano o ligeramente ondulado para oxigenar piernas manteniendo pulsaciones controladas.',
-      target_hr_zone: `Zona 2 (${z2Low} - ${z2High} bpm)`,
+      title: 'Transición Aeróbica',
+      description: `Salida suave en terreno llano manteniendo cadencia ágil (>90 rpm).`,
+      target_hr_zone: `Z2 (${z2Low}-${z2High} bpm)`,
       duration_min: 60,
       intensity: 'Baja' as const
     },
     {
       day: 'Viernes',
-      title: 'Descanso Total & Supercompensación',
-      description: 'Hidratación, movilidad articular y descanso neuromuscular previo al bloque de volumen del fin de semana.',
-      target_hr_zone: 'Descanso Total',
+      title: 'Descanso Total',
+      description: 'Descanso muscular e hidratación previo al fin de semana.',
+      target_hr_zone: 'Descanso',
       duration_min: 0,
       intensity: 'Descanso' as const
     },
     {
       day: 'Sábado',
-      title: 'Salida de Gran Fondo (Resistencia Específica)',
-      description: `Ruta larga progresiva buscando superar tu media habitual de ${avgDist} km con ritmo sostenido en ascensiones.`,
-      target_hr_zone: `Zona 2 a Zona 3 (${z2Low} - ${z3High} bpm)`,
+      title: `Fondo Progresivo (${Math.round(avgDist * 1.3)} km)`,
+      description: `Llano en Z2 (${z2Low}-${z2High} bpm) y puertos a ritmo constante en Z3 (${z3Low}-${z3High} bpm).`,
+      target_hr_zone: `Z2-Z3 (${z2Low}-${z3High} bpm)`,
       duration_min: longRideMin,
       intensity: 'Alta' as const
     },
     {
       day: 'Domingo',
-      title: 'Salida MTB / Técnica & Cambios de Ritmo',
-      description: 'Ruta por terreno variado o montaña trabajando control técnico, agilidad y estímulos cortos en repechos.',
-      target_hr_zone: `Zona 3 a Zona 4 (${z3Low} - ${z4High} bpm)`,
+      title: 'Cambios de Ritmo / Grupetta',
+      description: `Ruta libre con estímulos cortos en repechos llegando a ${z4High} bpm.`,
+      target_hr_zone: `Z3-Z4 (${z3Low}-${z4High} bpm)`,
       duration_min: Math.round(baseDurMin * 1.15),
       intensity: 'Competición' as const
     }
