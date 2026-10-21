@@ -27,6 +27,11 @@ export default function CoachPage() {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "coach"; text: string; time: string }[]>([]);
 
+  // Interactive FTP & Threshold Calculator state
+  const [test20MinWatts, setTest20MinWatts] = useState<string>("230");
+  const [test20MinHr, setTest20MinHr] = useState<string>("171");
+  const [riderWeightKg, setRiderWeightKg] = useState<string>("72");
+
   const getCachedClientActivities = () => {
     if (typeof window === "undefined") return [];
     try {
@@ -53,6 +58,10 @@ export default function CoachPage() {
       if (res.ok) {
         const data = await res.json();
         setCoachData(data);
+        if (data?.metrics?.maxObservedHr) {
+          const est20Hr = Math.round(data.metrics.maxObservedHr * 0.935);
+          setTest20MinHr(String(est20Hr));
+        }
       }
     } catch (e) {
       console.error(e);
@@ -62,18 +71,21 @@ export default function CoachPage() {
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedW = localStorage.getItem("freeride_ftp_20m_w");
+      const savedHr = localStorage.getItem("freeride_ftp_20m_hr");
+      const savedKg = localStorage.getItem("freeride_rider_kg");
+      if (savedW) setTest20MinWatts(savedW);
+      if (savedHr) setTest20MinHr(savedHr);
+      if (savedKg) setRiderWeightKg(savedKg);
+    }
     loadCoachData();
   }, []);
 
-  const handleAskCoach = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userQuery.trim()) return;
-
-    const queryText = userQuery;
-    setUserQuery("");
-
+  const submitCoachPrompt = async (promptText: string) => {
+    if (!promptText.trim()) return;
     const nowStr = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-    setChatMessages((prev) => [...prev, { role: "user", text: queryText, time: nowStr }]);
+    setChatMessages((prev) => [...prev, { role: "user", text: promptText, time: nowStr }]);
     setChatLoading(true);
 
     try {
@@ -84,7 +96,7 @@ export default function CoachPage() {
           "Content-Type": "application/json",
           ...getStravaAuthHeaders()
         },
-        body: JSON.stringify({ query: queryText, activities: cachedActs })
+        body: JSON.stringify({ query: promptText, activities: cachedActs })
       });
 
       if (res.ok) {
@@ -106,6 +118,14 @@ export default function CoachPage() {
     }
   };
 
+  const handleAskCoach = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userQuery.trim()) return;
+    const q = userQuery;
+    setUserQuery("");
+    await submitCoachPrompt(q);
+  };
+
   const metrics: RiderFitnessMetrics = coachData?.metrics || {
     ctl: 0,
     atl: 0,
@@ -117,6 +137,22 @@ export default function CoachPage() {
     avgHrLastRides: 0,
     avgWattsLastRides: 0
   };
+
+  const maxHrReal = metrics.maxObservedHr || 183;
+  const z1Low = Math.round(maxHrReal * 0.50);
+  const z1High = Math.round(maxHrReal * 0.60);
+  const z2Low = Math.round(maxHrReal * 0.62);
+  const z2High = Math.round(maxHrReal * 0.73);
+  const z4Low = Math.round(maxHrReal * 0.82);
+  const z4High = Math.round(maxHrReal * 0.91);
+  const estLthr = Math.round(maxHrReal * 0.895);
+
+  const parsed20W = Math.max(50, Number(test20MinWatts) || 230);
+  const parsed20Hr = Math.max(100, Number(test20MinHr) || 171);
+  const parsedKg = Math.max(40, Number(riderWeightKg) || 72);
+  const calculatedFtp = Math.round(parsed20W * 0.95);
+  const calculatedLthr = Math.round(parsed20Hr * 0.95);
+  const wattsPerKg = (calculatedFtp / parsedKg).toFixed(2);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
@@ -231,7 +267,7 @@ export default function CoachPage() {
             <div>
               <h2 className="text-base sm:text-lg font-bold text-white">Consultar a tu Entrenador AI</h2>
               <p className="text-xs text-dark-muted">
-                Hazle cualquier pregunta sobre tu evolución, ritmo, alimentación o entrenamiento de hoy
+                Hazle cualquier pregunta sobre tu evolución, test FTP, ritmo, alimentación o entrenamiento de hoy
               </p>
             </div>
           </div>
@@ -244,6 +280,26 @@ export default function CoachPage() {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-orange-400" : ""}`} />
           </button>
+        </div>
+
+        {/* Quick Action Prompt Chips */}
+        <div className="flex flex-wrap gap-2">
+          {[
+            "🎯 Créame un Test FTP de 20 minutos adaptado a mis pulsaciones reales",
+            "⛰️ ¿Cómo mejoro subiendo puertos según mi historial de Strava?",
+            "🚴 ¿Cómo preparo una ruta de más de 100 km sin desfallecer?",
+            "⚡ Analiza mis zonas de frecuencia cardíaca y polarización"
+          ].map((quickPrompt, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => submitCoachPrompt(quickPrompt)}
+              disabled={chatLoading}
+              className="text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-xl bg-dark-bg hover:bg-orange-500/20 text-orange-300 border border-orange-500/30 transition disabled:opacity-50"
+            >
+              {quickPrompt}
+            </button>
+          ))}
         </div>
 
         <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
@@ -287,7 +343,7 @@ export default function CoachPage() {
         <form onSubmit={handleAskCoach} className="flex items-center space-x-3 pt-2">
           <input
             type="text"
-            placeholder="Ej: ¿Qué entreno debo hacer hoy? / ¿Cómo gestiono los puertos en la ruta del sábado?"
+            placeholder="Ej: Créame un test FTP adaptado a mí / ¿Qué entreno debo hacer hoy?"
             value={userQuery}
             onChange={(e) => setUserQuery(e.target.value)}
             className="flex-1 bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-dark-muted focus:outline-none focus:border-orange-500"
@@ -302,6 +358,154 @@ export default function CoachPage() {
             <Send className="w-3.5 h-3.5" />
           </button>
         </form>
+      </div>
+
+      {/* 3.5 Personalized FTP & LTHR Test Protocol + Zones Calculator */}
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-orange-500/30 bg-gradient-to-br from-dark-card via-dark-card to-orange-950/20 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-dark-border pb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0">
+              <Zap className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base sm:text-lg font-extrabold text-white">
+                Protocolo de Test FTP & Umbral (20 min) Adaptado a tu Fisiología
+              </h2>
+              <p className="text-xs text-dark-muted">
+                Calibrado según tu FC Máxima real en Strava ({maxHrReal} bpm) y tu perfil de {metrics.riderProfileType || "Ciclista de Resistencia"}
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-300 self-start sm:self-auto">
+            Protocolo Oficial Allen & Coggan (65 min)
+          </span>
+        </div>
+
+        {/* 5-Phase Step-by-Step Protocol */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <div className="p-3.5 rounded-2xl bg-dark-bg/75 border border-dark-border space-y-1">
+            <span className="text-[10px] font-extrabold uppercase text-blue-400">1. Calentamiento (20m)</span>
+            <p className="text-xs font-bold text-white">Progresivo Z1 → Z2</p>
+            <p className="text-[11px] text-dark-muted leading-relaxed">
+              Rueda entre <strong className="text-white">{z1Low}-{z2High} bpm</strong> a 85-90 rpm preparando el sistema aeróbico.
+            </p>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-dark-bg/75 border border-dark-border space-y-1">
+            <span className="text-[10px] font-extrabold uppercase text-emerald-400">2. Activación (6m)</span>
+            <p className="text-xs font-bold text-white">3 × 1 min Cadencia Alta</p>
+            <p className="text-[11px] text-dark-muted leading-relaxed">
+              3 aceleraciones ágiles a <strong className="text-white">100-105 rpm</strong> con 1 min suave en Z1 entre cada una.
+            </p>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-dark-bg/75 border border-dark-border space-y-1">
+            <span className="text-[10px] font-extrabold uppercase text-amber-400">3. Vaciado AWC (15m)</span>
+            <p className="text-xs font-bold text-white">5m Fuerte + 10m Z1</p>
+            <p className="text-[11px] text-dark-muted leading-relaxed">
+              5 min en <strong className="text-white">{z4Low}-{z4High + 4} bpm</strong> para vaciar la batería anaeróbica + 10 min muy suaves (&lt;{z1High} bpm).
+            </p>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-orange-500/15 border border-orange-500/40 space-y-1">
+            <span className="text-[10px] font-extrabold uppercase text-orange-400">4. TEST FTP (20m)</span>
+            <p className="text-xs font-extrabold text-white">Esfuerzo Máximo Sostenido</p>
+            <p className="text-[11px] text-gray-300 leading-relaxed">
+              Subida tendida (3-5%) o llano. Min 0-5 a <strong className="text-white">{z4Low}-{estLthr} bpm</strong>, min 5-15 en <strong className="text-white">{estLthr}-{z4High} bpm</strong> y últimos 5m a tope.
+            </p>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-dark-bg/75 border border-dark-border space-y-1">
+            <span className="text-[10px] font-extrabold uppercase text-cyan-400">5. Enfriamiento (10m)</span>
+            <p className="text-xs font-bold text-white">Vuelta a la Calma</p>
+            <p className="text-[11px] text-dark-muted leading-relaxed">
+              10 min de rodaje regenerativo en <strong className="text-white">Zona 1 (&lt;{z1High} bpm)</strong> soltando piernas.
+            </p>
+          </div>
+        </div>
+
+        {/* Interactive Calculator */}
+        <div className="p-5 rounded-2xl bg-dark-bg/90 border border-dark-border space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h3 className="text-xs sm:text-sm font-bold text-white">
+              Calculadora de Resultado del Test (FTP en Vatios & Umbral LTHR en Pulsaciones)
+            </h3>
+            <span className="text-[11px] text-orange-400 font-semibold">
+              Fórmula: 95% de la media de tus 20 minutos
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-[11px] font-semibold text-dark-muted mb-1">
+                Potencia Media en los 20 min (W)
+              </label>
+              <input
+                type="number"
+                value={test20MinWatts}
+                onChange={(e) => {
+                  setTest20MinWatts(e.target.value);
+                  try {
+                    localStorage.setItem("freeride_ftp_20m_w", e.target.value);
+                  } catch {}
+                }}
+                className="w-full bg-dark-card border border-dark-border rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-orange-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-dark-muted mb-1">
+                Pulso Medio en los 20 min (bpm)
+              </label>
+              <input
+                type="number"
+                value={test20MinHr}
+                onChange={(e) => {
+                  setTest20MinHr(e.target.value);
+                  try {
+                    localStorage.setItem("freeride_ftp_20m_hr", e.target.value);
+                  } catch {}
+                }}
+                className="w-full bg-dark-card border border-dark-border rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-orange-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-dark-muted mb-1">
+                Tu Peso Corporal (kg)
+              </label>
+              <input
+                type="number"
+                value={riderWeightKg}
+                onChange={(e) => {
+                  setRiderWeightKg(e.target.value);
+                  try {
+                    localStorage.setItem("freeride_rider_kg", e.target.value);
+                  } catch {}
+                }}
+                className="w-full bg-dark-card border border-dark-border rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-orange-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div className="p-3.5 rounded-xl bg-orange-500/10 border border-orange-500/30">
+              <p className="text-[10px] uppercase font-bold text-orange-300">Tu FTP Estimado (95%)</p>
+              <p className="text-lg sm:text-xl font-black text-white">{calculatedFtp} W</p>
+            </div>
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+              <p className="text-[10px] uppercase font-bold text-emerald-300">Relación Peso/Potencia</p>
+              <p className="text-lg sm:text-xl font-black text-white">{wattsPerKg} W/kg</p>
+            </div>
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30">
+              <p className="text-[10px] uppercase font-bold text-rose-300">Pulso de Umbral (LTHR)</p>
+              <p className="text-lg sm:text-xl font-black text-white">{calculatedLthr} bpm</p>
+            </div>
+            <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
+              <p className="text-[10px] uppercase font-bold text-cyan-300">Zona 2 Base Óptima</p>
+              <p className="text-sm sm:text-base font-black text-white">
+                {Math.round(calculatedFtp * 0.56)}-{Math.round(calculatedFtp * 0.75)} W{" "}
+                <span className="text-xs font-normal text-cyan-300">({z2Low}-{z2High} bpm)</span>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 4. Adaptive 7-Day Workout Plan */}
