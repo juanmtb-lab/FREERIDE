@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <!-- Purple Gradient Background -->
+  <rect width="512" height="512" rx="128" fill="url(#freeride_purple_bg)"/>
+  
+  <!-- Subtle inner ambient glow -->
+  <rect x="8" y="8" width="496" height="496" rx="120" stroke="white" stroke-opacity="0.15" stroke-width="4"/>
+
+  <!-- Minimalist Bicycle Silhouette (Crisp White) -->
+  <g stroke="white" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Rear Wheel -->
+    <circle cx="128" cy="350" r="72" stroke-width="24"/>
+    <!-- Front Wheel -->
+    <circle cx="384" cy="350" r="72" stroke-width="24"/>
+    <!-- Wheel Hubs -->
+    <circle cx="128" cy="350" r="6" fill="white" stroke="none"/>
+    <circle cx="384" cy="350" r="6" fill="white" stroke="none"/>
+    
+    <!-- Chainstay: Rear hub to Bottom Bracket -->
+    <line x1="128" y1="350" x2="250" y2="350"/>
+    
+    <!-- Seatstay: Rear hub to Seat Clamp -->
+    <line x1="128" y1="350" x2="196" y2="216"/>
+    
+    <!-- Seat Tube: Seat Clamp to Bottom Bracket -->
+    <line x1="196" y1="216" x2="250" y2="350"/>
+    
+    <!-- Top Tube: Seat Clamp to Head Tube -->
+    <line x1="196" y1="216" x2="320" y2="216"/>
+    
+    <!-- Down Tube: Head Tube to Bottom Bracket -->
+    <line x1="320" y1="216" x2="250" y2="350"/>
+    
+    <!-- Fork: Head Tube to Front Hub -->
+    <line x1="320" y1="216" x2="384" y2="350"/>
+    
+    <!-- Seat Post & Minimalist Saddle -->
+    <line x1="196" y1="216" x2="190" y2="182"/>
+    <path d="M160 182 H 215" stroke-width="22"/>
+    
+    <!-- Stem & Minimalist Handlebars -->
+    <line x1="320" y1="216" x2="330" y2="168"/>
+    <path d="M305 168 H 355" stroke-width="22"/>
+  </g>
+
+  <defs>
+    <linearGradient id="freeride_purple_bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8B5CF6"/>
+      <stop offset="0.5" stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#6D28D9"/>
+    </linearGradient>
+  </defs>
+</svg>

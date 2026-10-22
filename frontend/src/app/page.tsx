@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import StravaConnectModal from "@/components/strava/StravaConnectModal";
 import AuthModal from "@/components/auth/AuthModal";
+import FreerideLogo from "@/components/layout/FreerideLogo";
 
 export default function Dashboard() {
   const [activities, setActivities] = useState<ActivitySummary[]>([]);
@@ -354,9 +355,7 @@ export default function Dashboard() {
 
       {!activeUser ? (
         <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-purple-500/40 bg-gradient-to-br from-dark-card via-dark-card to-purple-950/20 text-center space-y-5 max-w-2xl mx-auto shadow-2xl">
-          <div className="w-16 h-16 rounded-3xl bg-purple-500/20 text-purple-400 flex items-center justify-center mx-auto shadow-lg shadow-purple-500/10">
-            <Bike className="w-8 h-8" />
-          </div>
+          <FreerideLogo size="lg" className="mx-auto" />
           <div className="space-y-2">
             <h2 className="text-xl sm:text-2xl font-extrabold text-white">
               Sesión Cerrada · Selecciona tu Atleta

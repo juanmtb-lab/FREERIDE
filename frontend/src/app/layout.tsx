@@ -7,7 +7,17 @@ import type { Viewport } from "next";
 export const metadata = {
   title: "FREERIDE - Telemetría Strava & Entrenador Personal AI",
   description: "App de telemetría de ciclismo conectada a Strava API v3 y Entrenador Personal AI",
-  manifest: "/manifest.json",
+  manifest: "/manifest.json?v=3",
+  icons: {
+    icon: [
+      { url: "/icon.svg?v=3", type: "image/svg+xml" },
+      { url: "/icon-192.png?v=3", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png?v=3", sizes: "512x512", type: "image/png" }
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png?v=3", sizes: "180x180", type: "image/png" }
+    ]
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -31,10 +41,10 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark">
       <head>
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json?v=3" />
+        <link rel="icon" type="image/svg+xml" href="/icon.svg?v=3" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=3" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3" />
         <meta name="theme-color" content="#7C3AED" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="mobile-web-app-capable" content="yes" />
