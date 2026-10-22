@@ -357,12 +357,25 @@ export async function queryAiCoach(
 
   if (webhookUrl && webhookUrl.startsWith('http')) {
     try {
+      const athletePrompt = userQuery || 'Prescribe el entrenamiento recomendado según mi estado de forma reciente';
+      const quantifiedPrompt = `[INSTRUCCIONES TÉCNICAS OBLIGATORIAS:
+Responde de forma concisa y directa en viñetas estructuradas en español.
+Sin introducciones genéricas ni frases vacías como "disfruta del paisaje".
+Debes indicar con números exactos:
+• Diagnóstico de forma actual (evaluando CTL: ${metrics.ctl}, ATL: ${metrics.atl}, TSB: ${metrics.tsb}).
+• Distancia exacta en km y Desnivel positivo en +m.
+• Duración en minutos y Zona de intensidad (Z1, Z2, Z3, Z4 o Z5).
+• Pulsaciones reales en bpm (FC Máx real: ${metrics.maxObservedHr || 183} bpm) y Cadencia en rpm.
+• Estructura de la sesión en 3 fases: Calentamiento, Serie Principal y Enfriamiento.]
+
+Petición del Atleta: ${athletePrompt}`;
+
       const payload = {
         event: 'COACH_ANALYSIS_REQUEST',
         timestamp: new Date().toISOString(),
         response_format_instruction:
-          'Responde SIEMPRE en español en máximo 4-5 líneas cortas con viñetas. Sé ultra específico con duraciones (min), pulsaciones (bpm) y cadencia (rpm). Cero introducciones ni texto largo.',
-        user_query: userQuery || 'Resumen corto de perfil y entreno clave de hoy',
+          'Responde SIEMPRE en viñetas técnicas con distancias en km, desnivel en +m, duración en min, pulsaciones en bpm y cadencia en rpm. Cero rodeos.',
+        user_query: quantifiedPrompt,
         rider_metrics: metrics,
         recent_activities: activities.slice(0, 20).map(a => ({
           id: a.id,
