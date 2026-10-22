@@ -55,8 +55,8 @@ export default function OnboardingModal({ user, isOpen, onCompleted }: Onboardin
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-dark-card border border-purple-500/40 rounded-3xl p-6 sm:p-8 max-w-xl w-full space-y-6 relative shadow-2xl animate-fade-in my-8">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 pt-safe pb-safe overflow-y-auto">
+      <div className="bg-dark-card border border-purple-500/40 rounded-3xl p-6 sm:p-8 max-w-xl w-full space-y-6 relative shadow-2xl animate-fade-in my-auto max-h-[88dvh] overflow-y-auto">
         <div className="flex items-center space-x-3.5 border-b border-dark-border pb-4">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center shadow-lg shadow-purple-500/30">
             <Sparkles className="w-6 h-6" />

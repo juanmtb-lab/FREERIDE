@@ -46,8 +46,8 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChanged 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-dark-card border border-dark-border rounded-3xl p-6 sm:p-7 max-w-md w-full space-y-5 relative shadow-2xl animate-fade-in">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 pt-safe pb-safe">
+      <div className="bg-dark-card border border-dark-border rounded-3xl p-6 sm:p-7 max-w-md w-full space-y-5 relative shadow-2xl animate-fade-in max-h-[88dvh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-dark-muted hover:text-white p-1.5 rounded-xl transition"

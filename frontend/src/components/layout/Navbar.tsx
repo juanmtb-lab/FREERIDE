@@ -126,98 +126,100 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="h-14 sm:h-16 bg-dark-card/95 backdrop-blur-md border-b border-dark-border px-4 sm:px-6 flex items-center justify-between shrink-0 z-30">
-        {/* Mobile Brand Link */}
-        <Link href="/" className="flex items-center space-x-2.5 md:hidden hover:opacity-90 transition cursor-pointer group">
-          <FreerideLogo size="sm" className="group-hover:scale-105 transition-transform" />
-          <span className="font-bold text-base text-white tracking-wider group-hover:text-purple-400 transition-colors">
-            FREERIDE
-          </span>
-        </Link>
-
-        {/* AI Coach Banner Badge */}
-        <Link
-          href="/coach"
-          className="hidden md:flex items-center space-x-2 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-purple-500/20 border border-purple-500/30 px-3.5 py-1.5 rounded-xl hover:border-purple-500/60 transition group"
-        >
-          <BrainCircuit className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
-          <span className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">
-            Entrenador AI Activo
-          </span>
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-1"></span>
-        </Link>
-
-        {/* User Switcher & Strava Actions */}
-        <div className="flex items-center space-x-2 sm:space-x-3">
-          {/* User Profile Selector Pill */}
-          <button
-            onClick={() => setIsAuthModalOpen(true)}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl transition text-xs font-semibold ${
-              currentUser
-                ? "bg-dark-bg hover:bg-dark-border/80 border border-dark-border text-white group"
-                : "bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-md shadow-purple-600/30"
-            }`}
-            title="Cambiar de usuario o invitar a un amigo"
-          >
-            <div className={`w-5 h-5 rounded-lg flex items-center justify-center ${currentUser ? "bg-purple-500/20 text-purple-400 group-hover:scale-105" : "bg-white/20 text-white"}`}>
-              <User className="w-3.5 h-3.5" />
-            </div>
-            <span className="max-w-[90px] sm:max-w-[120px] truncate">
-              {currentUser?.name || "Elegir Atleta"}
+      <header className="bg-dark-card/95 backdrop-blur-md border-b border-dark-border px-4 sm:px-6 shrink-0 z-30 pt-safe">
+        <div className="h-14 sm:h-16 flex items-center justify-between w-full">
+          {/* Mobile Brand Link */}
+          <Link href="/" className="flex items-center space-x-2.5 md:hidden hover:opacity-90 transition cursor-pointer group">
+            <FreerideLogo size="sm" className="group-hover:scale-105 transition-transform" />
+            <span className="font-bold text-base text-white tracking-wider group-hover:text-purple-400 transition-colors">
+              FREERIDE
             </span>
-          </button>
-
-          {currentUser && session?.connected ? (
-            <div className="flex items-center space-x-1.5 sm:space-x-2 bg-dark-bg/80 border border-purple-500/40 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl">
-              <span className="flex items-center space-x-1.5 text-[11px] sm:text-xs text-purple-300 font-semibold">
-                <span className="w-4 h-4 rounded bg-purple-600 text-white flex items-center justify-center font-black text-[10px]">
-                  S
-                </span>
-                <span className="hidden sm:inline">Strava:</span>
-                <span className="text-white max-w-[90px] sm:max-w-[130px] truncate">
-                  {session.athleteName || "Conectado"}
-                </span>
-              </span>
-
-              <button
-                onClick={handleQuickRefresh}
-                disabled={syncing}
-                title="Sincronizar ahora nuevos entrenamientos de Strava"
-                className="p-1 text-purple-400 hover:text-white hover:bg-purple-500/20 rounded-lg transition disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${syncing ? "animate-spin text-purple-400" : ""}`} />
-              </button>
-
-              <button
-                onClick={handleLogoutStrava}
-                title="Desconectar Strava de este usuario"
-                className="p-1 text-dark-muted hover:text-rose-400 rounded-lg transition ml-0.5"
-              >
-                <LogOut className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setIsStravaModalOpen(true)}
-              className="flex items-center space-x-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[11px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition shadow-md shadow-purple-600/20"
-            >
-              <span className="font-black text-xs">S</span>
-              <span>Conectar Strava</span>
-            </button>
-          )}
-
-          <Link
-            href="/upload"
-            className="hidden sm:flex items-center space-x-2 bg-dark-bg hover:bg-dark-border border border-dark-border text-white font-medium text-xs px-3.5 py-2 rounded-xl transition"
-          >
-            <UploadCloud className="w-4 h-4 text-purple-400" />
-            <span>Subir .FIT / .GPX</span>
           </Link>
+
+          {/* AI Coach Banner Badge */}
+          <Link
+            href="/coach"
+            className="hidden md:flex items-center space-x-2 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-purple-500/20 border border-purple-500/30 px-3.5 py-1.5 rounded-xl hover:border-purple-500/60 transition group"
+          >
+            <BrainCircuit className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">
+              Entrenador AI Activo
+            </span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-1"></span>
+          </Link>
+
+          {/* User Switcher & Strava Actions */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            {/* User Profile Selector Pill */}
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl transition text-xs font-semibold ${
+                currentUser
+                  ? "bg-dark-bg hover:bg-dark-border/80 border border-dark-border text-white group"
+                  : "bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-md shadow-purple-600/30"
+              }`}
+              title="Cambiar de usuario o invitar a un amigo"
+            >
+              <div className={`w-5 h-5 rounded-lg flex items-center justify-center ${currentUser ? "bg-purple-500/20 text-purple-400 group-hover:scale-105" : "bg-white/20 text-white"}`}>
+                <User className="w-3.5 h-3.5" />
+              </div>
+              <span className="max-w-[90px] sm:max-w-[120px] truncate">
+                {currentUser?.name || "Elegir Atleta"}
+              </span>
+            </button>
+
+            {currentUser && session?.connected ? (
+              <div className="flex items-center space-x-1.5 sm:space-x-2 bg-dark-bg/80 border border-purple-500/40 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl">
+                <span className="flex items-center space-x-1.5 text-[11px] sm:text-xs text-purple-300 font-semibold">
+                  <span className="w-4 h-4 rounded bg-purple-600 text-white flex items-center justify-center font-black text-[10px]">
+                    S
+                  </span>
+                  <span className="hidden sm:inline">Strava:</span>
+                  <span className="text-white max-w-[90px] sm:max-w-[130px] truncate">
+                    {session.athleteName || "Conectado"}
+                  </span>
+                </span>
+
+                <button
+                  onClick={handleQuickRefresh}
+                  disabled={syncing}
+                  title="Sincronizar ahora nuevos entrenamientos de Strava"
+                  className="p-1 text-purple-400 hover:text-white hover:bg-purple-500/20 rounded-lg transition disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${syncing ? "animate-spin text-purple-400" : ""}`} />
+                </button>
+
+                <button
+                  onClick={handleLogoutStrava}
+                  title="Desconectar Strava de este usuario"
+                  className="p-1 text-dark-muted hover:text-rose-400 rounded-lg transition ml-0.5"
+                >
+                  <LogOut className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsStravaModalOpen(true)}
+                className="flex items-center space-x-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[11px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition shadow-md shadow-purple-600/20"
+              >
+                <span className="font-black text-xs">S</span>
+                <span>Conectar Strava</span>
+              </button>
+            )}
+
+            <Link
+              href="/upload"
+              className="hidden sm:flex items-center space-x-2 bg-dark-bg hover:bg-dark-border border border-dark-border text-white font-medium text-xs px-3.5 py-2 rounded-xl transition"
+            >
+              <UploadCloud className="w-4 h-4 text-purple-400" />
+              <span>Subir .FIT / .GPX</span>
+            </Link>
+          </div>
         </div>
       </header>
 
       {syncMessage && (
-        <div className="fixed top-16 right-4 sm:right-6 z-50 glass-panel px-4 py-3 rounded-2xl border border-emerald-500/40 text-emerald-400 text-xs font-bold shadow-xl flex items-center space-x-2 animate-bounce">
+        <div className="fixed top-16 sm:top-20 mt-safe right-4 sm:right-6 z-50 glass-panel px-4 py-3 rounded-2xl border border-emerald-500/40 text-emerald-400 text-xs font-bold shadow-xl flex items-center space-x-2 animate-bounce">
           <CheckCircle2 className="w-4 h-4" />
           <span>{syncMessage}</span>
         </div>

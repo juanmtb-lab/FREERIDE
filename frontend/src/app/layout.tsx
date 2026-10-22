@@ -30,7 +30,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false
+  userScalable: false,
+  viewportFit: "cover"
 };
 
 export default function RootLayout({
@@ -41,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
         <link rel="manifest" href="/manifest.json?v=3" />
         <link rel="icon" type="image/svg+xml" href="/icon.svg?v=3" />
         <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=3" />
@@ -50,11 +52,11 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content="FREERIDE" />
       </head>
-      <body className="flex h-screen overflow-hidden bg-dark-bg text-dark-text">
+      <body className="flex h-[100dvh] overflow-hidden bg-dark-bg text-dark-text">
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           <Navbar />
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-36 md:pb-8">
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-32 md:pb-8 pl-safe pr-safe">
             {children}
           </main>
         </div>

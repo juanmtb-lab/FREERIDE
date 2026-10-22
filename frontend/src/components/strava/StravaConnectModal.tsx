@@ -134,8 +134,8 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-lg glass-panel p-6 sm:p-7 rounded-3xl border border-purple-500/30 shadow-2xl max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-safe pb-safe bg-black/75 backdrop-blur-sm animate-fade-in">
+      <div className="relative w-full max-w-lg glass-panel p-6 sm:p-7 rounded-3xl border border-purple-500/30 shadow-2xl max-h-[88dvh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-dark-muted hover:text-white transition p-1.5"
