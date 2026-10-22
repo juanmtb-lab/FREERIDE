@@ -20,11 +20,11 @@ export default function Sidebar() {
           href="/"
           className="p-6 flex items-center space-x-3 border-b border-dark-border hover:opacity-90 transition cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform">
             <Bike className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-xl tracking-wider text-white group-hover:text-orange-400 transition-colors">
+            <h1 className="font-bold text-xl tracking-wider text-white group-hover:text-purple-400 transition-colors">
               FREERIDE
             </h1>
             <p className="text-xs text-dark-accent font-medium">Strava Telemetry & AI Coach</p>
@@ -55,9 +55,9 @@ export default function Sidebar() {
 
       <div className="p-4 border-t border-dark-border">
         <div className="glass-panel p-3 rounded-xl text-xs space-y-1">
-          <div className="flex items-center justify-between text-orange-400">
+          <div className="flex items-center justify-between text-purple-400">
             <span className="flex items-center space-x-1.5">
-              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+              <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
               <span className="font-medium">Motor Strava API v3</span>
             </span>
           </div>

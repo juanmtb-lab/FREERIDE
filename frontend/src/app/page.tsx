@@ -312,7 +312,7 @@ export default function Dashboard() {
       {syncBanner && (
         <div className="glass-panel p-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-xs sm:text-sm font-bold flex items-center space-x-3 shadow-lg">
           {syncing ? (
-            <RefreshCw className="w-5 h-5 animate-spin text-orange-400 shrink-0" />
+            <RefreshCw className="w-5 h-5 animate-spin text-purple-400 shrink-0" />
           ) : (
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
           )}
@@ -328,7 +328,7 @@ export default function Dashboard() {
           </div>
           <button
             onClick={() => setIsStravaModalOpen(true)}
-            className="shrink-0 bg-[#FC4C02] hover:bg-[#e34402] text-white text-xs font-bold px-3.5 py-2 rounded-xl transition"
+            className="shrink-0 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition"
           >
             Reintentar Conexión
           </button>
@@ -336,9 +336,9 @@ export default function Dashboard() {
       )}
 
       {/* Header Banner */}
-      <div className="glass-panel p-5 md:p-8 rounded-3xl bg-gradient-to-r from-dark-card via-dark-card to-orange-950/30 border border-orange-500/20 relative overflow-hidden">
+      <div className="glass-panel p-5 md:p-8 rounded-3xl bg-gradient-to-r from-dark-card via-dark-card to-purple-950/30 border border-purple-500/20 relative overflow-hidden">
         <div className="relative z-10 space-y-2">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-bold">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-400 text-xs font-bold">
             <Bike className="w-3.5 h-3.5" />
             <span>FREERIDE v4 · Powered by Strava API</span>
           </div>
@@ -352,8 +352,8 @@ export default function Dashboard() {
       </div>
 
       {!activeUser ? (
-        <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-orange-500/40 bg-gradient-to-br from-dark-card via-dark-card to-orange-950/20 text-center space-y-5 max-w-2xl mx-auto shadow-2xl">
-          <div className="w-16 h-16 rounded-3xl bg-orange-500/20 text-orange-400 flex items-center justify-center mx-auto shadow-lg shadow-orange-500/10">
+        <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-purple-500/40 bg-gradient-to-br from-dark-card via-dark-card to-purple-950/20 text-center space-y-5 max-w-2xl mx-auto shadow-2xl">
+          <div className="w-16 h-16 rounded-3xl bg-purple-500/20 text-purple-400 flex items-center justify-center mx-auto shadow-lg shadow-purple-500/10">
             <Bike className="w-8 h-8" />
           </div>
           <div className="space-y-2">
@@ -367,7 +367,7 @@ export default function Dashboard() {
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <button
               onClick={() => setIsAuthModalOpen(true)}
-              className="px-6 py-3 bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-xs sm:text-sm rounded-xl transition shadow-lg shadow-orange-600/30 flex items-center space-x-2"
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs sm:text-sm rounded-xl transition shadow-lg shadow-purple-600/30 flex items-center space-x-2"
             >
               <span>Elegir o Crear Perfil de Atleta</span>
               <ArrowRight className="w-4 h-4" />
@@ -379,7 +379,7 @@ export default function Dashboard() {
       {/* Metric Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
         <div className="glass-panel p-4 sm:p-5 rounded-2xl flex items-center space-x-3 sm:space-x-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
             <Bike className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
@@ -423,18 +423,18 @@ export default function Dashboard() {
 
       {/* Historical Rider Training Profile & AI Recommendation Banner */}
       {activities.length > 0 && (
-        <div className="glass-panel p-5 sm:p-6 rounded-3xl border border-orange-500/30 bg-gradient-to-br from-dark-card via-dark-card to-orange-950/20 space-y-5">
+        <div className="glass-panel p-5 sm:p-6 rounded-3xl border border-purple-500/30 bg-gradient-to-br from-dark-card via-dark-card to-purple-950/20 space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-base sm:text-lg font-extrabold text-white">
-                    Tu Perfil de Entrenamiento: <span className="text-orange-400">{riderProfileLabel}</span>
+                    Tu Perfil de Entrenamiento: <span className="text-purple-400">{riderProfileLabel}</span>
                   </h2>
-                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-300">
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300">
                     {totalCount} salidas analizadas en Strava
                   </span>
                 </div>
@@ -446,7 +446,7 @@ export default function Dashboard() {
 
             <Link
               href="/coach"
-              className="self-start sm:self-auto inline-flex items-center space-x-2 bg-[#FC4C02] hover:bg-[#e34402] text-white text-xs font-extrabold px-4 py-2.5 rounded-xl transition shadow-lg shadow-orange-600/20"
+              className="self-start sm:self-auto inline-flex items-center space-x-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold px-4 py-2.5 rounded-xl transition shadow-lg shadow-purple-600/20"
             >
               <BrainCircuit className="w-4 h-4" />
               <span>Ver Plan Semanal Personalizado</span>
@@ -457,7 +457,7 @@ export default function Dashboard() {
             <div className="p-3.5 rounded-2xl bg-dark-bg/70 border border-dark-border">
               <p className="text-[10px] uppercase font-bold text-dark-muted">Media por Salida / Récord</p>
               <p className="text-sm sm:text-base font-extrabold text-white mt-0.5">
-                {avgDistKm} km <span className="text-xs font-normal text-orange-400">(Máx: {maxDistKm} km)</span>
+                {avgDistKm} km <span className="text-xs font-normal text-purple-400">(Máx: {maxDistKm} km)</span>
               </p>
             </div>
             <div className="p-3.5 rounded-2xl bg-dark-bg/70 border border-dark-border">
@@ -489,14 +489,14 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-dark-bg/85 border border-orange-500/20 text-xs text-gray-300 leading-relaxed space-y-1">
-            <p className="font-bold text-orange-400 flex items-center space-x-1.5 mb-1">
+          <div className="p-4 rounded-2xl bg-dark-bg/85 border border-purple-500/20 text-xs text-gray-300 leading-relaxed space-y-1">
+            <p className="font-bold text-purple-400 flex items-center space-x-1.5 mb-1">
               <BrainCircuit className="w-4 h-4" />
               <span>Pauta Directa según tu Historial:</span>
             </p>
             <p>• <strong className="text-white">Base Z2 (75% de tus salidas):</strong> Rodar entre <strong className="text-emerald-400">{z2Low}-{z2High} bpm</strong> (bajar de tu media de {avgHistoricalHr} bpm).</p>
             <p>• <strong className="text-white">Calidad Z4 (1 día/sem):</strong> 3×10 min en subida a <strong className="text-amber-400">{z4Low}-{z4High} bpm</strong> (rec: 5m suave).</p>
-            <p>• <strong className="text-white">Fondo Sábado:</strong> Objetivo <strong className="text-orange-400">{Math.round(Math.max(45, Number(avgDistKm) * 1.25))} km</strong> a 88-90 rpm.</p>
+            <p>• <strong className="text-white">Fondo Sábado:</strong> Objetivo <strong className="text-purple-400">{Math.round(Math.max(45, Number(avgDistKm) * 1.25))} km</strong> a 88-90 rpm.</p>
           </div>
         </div>
       )}
@@ -521,12 +521,12 @@ export default function Dashboard() {
 
           {loading && activities.length === 0 ? (
             <div className="glass-panel p-8 sm:p-12 text-center text-dark-muted rounded-2xl text-xs sm:text-sm flex flex-col items-center space-y-3">
-              <RefreshCw className="w-6 h-6 animate-spin text-orange-400" />
+              <RefreshCw className="w-6 h-6 animate-spin text-purple-400" />
               <span>Sincronizando y analizando todo tu historial de entrenamientos desde Strava...</span>
             </div>
           ) : activities.length === 0 ? (
-            <div className="glass-panel p-8 sm:p-12 text-center rounded-2xl space-y-4 border border-orange-500/20">
-              <div className="w-12 h-12 rounded-2xl bg-[#FC4C02] text-white flex items-center justify-center font-black text-2xl mx-auto shadow-lg shadow-orange-600/30">
+            <div className="glass-panel p-8 sm:p-12 text-center rounded-2xl space-y-4 border border-purple-500/20">
+              <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-black text-2xl mx-auto shadow-lg shadow-purple-600/30">
                 S
               </div>
               <div className="space-y-1">
@@ -538,7 +538,7 @@ export default function Dashboard() {
               <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                 <button
                   onClick={() => (stravaSession?.connected ? handleQuickSync() : setIsStravaModalOpen(true))}
-                  className="inline-flex items-center space-x-2 bg-[#FC4C02] hover:bg-[#e34402] text-white text-xs font-extrabold px-5 py-3 rounded-xl transition shadow-lg shadow-orange-600/25"
+                  className="inline-flex items-center space-x-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold px-5 py-3 rounded-xl transition shadow-lg shadow-purple-600/25"
                 >
                   <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
                   <span>Conectar y Sincronizar Strava</span>
@@ -553,7 +553,7 @@ export default function Dashboard() {
                   <Link
                     key={act.id}
                     href={`/activities/${act.id}`}
-                    className="glass-panel p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 hover:border-orange-500/50 transition duration-200 group"
+                    className="glass-panel p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 hover:border-purple-500/50 transition duration-200 group"
                   >
                     <div className="space-y-1 w-full sm:w-auto">
                       <div className="flex items-center justify-between sm:justify-start space-x-3">
@@ -574,7 +574,7 @@ export default function Dashboard() {
                           })}
                         </span>
                       </div>
-                      <h3 className="font-bold text-sm sm:text-base text-white group-hover:text-orange-400 transition">
+                      <h3 className="font-bold text-sm sm:text-base text-white group-hover:text-purple-400 transition">
                         {act.title}
                       </h3>
                     </div>
@@ -604,11 +604,11 @@ export default function Dashboard() {
         {/* Right Column: Strava Sync & AI Coach Widgets */}
         <div className="space-y-6">
           {/* Strava Sync Card */}
-          <div className="glass-panel p-5 sm:p-6 rounded-2xl border border-orange-500/30 space-y-4">
+          <div className="glass-panel p-5 sm:p-6 rounded-2xl border border-purple-500/30 space-y-4">
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-white text-sm sm:text-base flex items-center space-x-2">
-                  <span className="w-5 h-5 rounded-md bg-[#FC4C02] text-white flex items-center justify-center font-black text-xs">
+                  <span className="w-5 h-5 rounded-md bg-purple-600 text-white flex items-center justify-center font-black text-xs">
                     S
                   </span>
                   <span>Motor Oficial Strava API</span>
@@ -631,7 +631,7 @@ export default function Dashboard() {
               <button
                 onClick={() => (stravaSession?.connected ? handleQuickSync() : setIsStravaModalOpen(true))}
                 disabled={syncing}
-                className="w-full inline-flex items-center justify-center space-x-2 bg-[#FC4C02] hover:bg-[#e34402] text-white text-xs font-extrabold py-3 rounded-xl transition shadow-lg shadow-orange-600/25 disabled:opacity-50"
+                className="w-full inline-flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold py-3 rounded-xl transition shadow-lg shadow-purple-600/25 disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
                 <span>

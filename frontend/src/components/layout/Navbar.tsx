@@ -128,10 +128,10 @@ export default function Navbar() {
       <header className="h-14 sm:h-16 bg-dark-card/95 backdrop-blur-md border-b border-dark-border px-4 sm:px-6 flex items-center justify-between shrink-0 z-30">
         {/* Mobile Brand Link */}
         <Link href="/" className="flex items-center space-x-2 md:hidden hover:opacity-90 transition cursor-pointer group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center shadow-md shadow-orange-500/20">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-md shadow-purple-500/20">
             <Bike className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-base text-white tracking-wider group-hover:text-orange-400 transition-colors">
+          <span className="font-bold text-base text-white tracking-wider group-hover:text-purple-400 transition-colors">
             FREERIDE
           </span>
         </Link>
@@ -139,10 +139,10 @@ export default function Navbar() {
         {/* AI Coach Banner Badge */}
         <Link
           href="/coach"
-          className="hidden md:flex items-center space-x-2 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/20 border border-orange-500/30 px-3.5 py-1.5 rounded-xl hover:border-orange-500/60 transition group"
+          className="hidden md:flex items-center space-x-2 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-purple-500/20 border border-purple-500/30 px-3.5 py-1.5 rounded-xl hover:border-purple-500/60 transition group"
         >
-          <BrainCircuit className="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform" />
-          <span className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors">
+          <BrainCircuit className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
+          <span className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">
             Entrenador AI Activo
           </span>
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-1"></span>
@@ -156,11 +156,11 @@ export default function Navbar() {
             className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl transition text-xs font-semibold ${
               currentUser
                 ? "bg-dark-bg hover:bg-dark-border/80 border border-dark-border text-white group"
-                : "bg-orange-600 hover:bg-orange-500 text-white font-bold shadow-md shadow-orange-600/30"
+                : "bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-md shadow-purple-600/30"
             }`}
             title="Cambiar de usuario o invitar a un amigo"
           >
-            <div className={`w-5 h-5 rounded-lg flex items-center justify-center ${currentUser ? "bg-orange-500/20 text-orange-400 group-hover:scale-105" : "bg-white/20 text-white"}`}>
+            <div className={`w-5 h-5 rounded-lg flex items-center justify-center ${currentUser ? "bg-purple-500/20 text-purple-400 group-hover:scale-105" : "bg-white/20 text-white"}`}>
               <User className="w-3.5 h-3.5" />
             </div>
             <span className="max-w-[90px] sm:max-w-[120px] truncate">
@@ -169,9 +169,9 @@ export default function Navbar() {
           </button>
 
           {currentUser && session?.connected ? (
-            <div className="flex items-center space-x-1.5 sm:space-x-2 bg-dark-bg/80 border border-orange-500/40 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl">
-              <span className="flex items-center space-x-1.5 text-[11px] sm:text-xs text-orange-400 font-semibold">
-                <span className="w-4 h-4 rounded bg-[#FC4C02] text-white flex items-center justify-center font-black text-[10px]">
+            <div className="flex items-center space-x-1.5 sm:space-x-2 bg-dark-bg/80 border border-purple-500/40 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl">
+              <span className="flex items-center space-x-1.5 text-[11px] sm:text-xs text-purple-300 font-semibold">
+                <span className="w-4 h-4 rounded bg-purple-600 text-white flex items-center justify-center font-black text-[10px]">
                   S
                 </span>
                 <span className="hidden sm:inline">Strava:</span>
@@ -184,9 +184,9 @@ export default function Navbar() {
                 onClick={handleQuickRefresh}
                 disabled={syncing}
                 title="Sincronizar ahora nuevos entrenamientos de Strava"
-                className="p-1 text-orange-400 hover:text-white hover:bg-orange-500/20 rounded-lg transition disabled:opacity-50"
+                className="p-1 text-purple-400 hover:text-white hover:bg-purple-500/20 rounded-lg transition disabled:opacity-50"
               >
-                <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${syncing ? "animate-spin text-amber-400" : ""}`} />
+                <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${syncing ? "animate-spin text-purple-400" : ""}`} />
               </button>
 
               <button
@@ -200,7 +200,7 @@ export default function Navbar() {
           ) : (
             <button
               onClick={() => setIsStravaModalOpen(true)}
-              className="flex items-center space-x-1.5 bg-[#FC4C02] hover:bg-[#e34402] text-white font-bold text-[11px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition shadow-md shadow-orange-600/20"
+              className="flex items-center space-x-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[11px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition shadow-md shadow-purple-600/20"
             >
               <span className="font-black text-xs">S</span>
               <span>Conectar Strava</span>
@@ -211,7 +211,7 @@ export default function Navbar() {
             href="/upload"
             className="hidden sm:flex items-center space-x-2 bg-dark-bg hover:bg-dark-border border border-dark-border text-white font-medium text-xs px-3.5 py-2 rounded-xl transition"
           >
-            <UploadCloud className="w-4 h-4 text-orange-400" />
+            <UploadCloud className="w-4 h-4 text-purple-400" />
             <span>Subir .FIT / .GPX</span>
           </Link>
         </div>

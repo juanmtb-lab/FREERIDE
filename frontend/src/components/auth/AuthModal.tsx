@@ -56,7 +56,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChanged 
         </button>
 
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-orange-500/20 text-orange-400 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
             <User className="w-5 h-5" />
           </div>
           <div>
@@ -71,7 +71,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChanged 
             type="button"
             onClick={() => { setTab("switch"); setError(null); }}
             className={`flex-1 py-2 rounded-lg font-bold transition flex items-center justify-center space-x-1.5 ${
-              tab === "switch" ? "bg-orange-600 text-white shadow-md shadow-orange-600/30" : "text-dark-muted hover:text-white"
+              tab === "switch" ? "bg-purple-600 text-white shadow-md shadow-purple-600/30" : "text-dark-muted hover:text-white"
             }`}
           >
             <LogIn className="w-3.5 h-3.5" />
@@ -81,7 +81,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChanged 
             type="button"
             onClick={() => { setTab("register"); setError(null); }}
             className={`flex-1 py-2 rounded-lg font-bold transition flex items-center justify-center space-x-1.5 ${
-              tab === "register" ? "bg-orange-600 text-white shadow-md shadow-orange-600/30" : "text-dark-muted hover:text-white"
+              tab === "register" ? "bg-purple-600 text-white shadow-md shadow-purple-600/30" : "text-dark-muted hover:text-white"
             }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
@@ -102,7 +102,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChanged 
                 <p>Todavía no hay perfiles registrados.</p>
                 <button
                   onClick={() => setTab("register")}
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl transition"
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition"
                 >
                   Crear mi primer usuario
                 </button>
@@ -117,7 +117,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChanged 
                       onClick={() => handleSelectUser(u)}
                       className={`p-3.5 rounded-2xl border cursor-pointer transition flex items-center justify-between ${
                         isActive
-                          ? "bg-orange-500/15 border-orange-500/50 text-white"
+                          ? "bg-purple-500/15 border-purple-500/50 text-white"
                           : "bg-dark-bg/60 border-dark-border text-dark-muted hover:text-white hover:border-dark-muted/50"
                       }`}
                     >
@@ -125,14 +125,14 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChanged 
                         <div className="flex items-center space-x-2">
                           <p className="text-xs font-bold text-white">{u.name}</p>
                           {isActive && (
-                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-orange-500 text-white">
+                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-purple-500 text-white">
                               Activo
                             </span>
                           )}
                         </div>
                         <p className="text-[11px] text-dark-muted">{u.email}</p>
                         {u.stravaAthleteName && (
-                          <p className="text-[10px] text-orange-400 font-semibold flex items-center space-x-1">
+                          <p className="text-[10px] text-purple-400 font-semibold flex items-center space-x-1">
                             <span>Strava: {u.stravaAthleteName}</span>
                           </p>
                         )}
@@ -140,9 +140,9 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChanged 
 
                       <div className="flex items-center space-x-2">
                         {isActive ? (
-                          <Check className="w-5 h-5 text-orange-400 shrink-0" />
+                          <Check className="w-5 h-5 text-purple-400 shrink-0" />
                         ) : (
-                          <span className="text-[11px] font-bold text-orange-400 hover:underline">
+                          <span className="text-[11px] font-bold text-purple-400 hover:underline">
                             Cambiar
                           </span>
                         )}
@@ -194,7 +194,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChanged 
                 placeholder="Ej: Carlos Gómez"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500"
               />
             </div>
 
@@ -208,7 +208,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChanged 
                 placeholder="carlos@ejemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500"
               />
               <p className="text-[10px] text-dark-muted mt-1">
                 Servirá para identificar su cuenta y guardar sus rutas y cuestionario por separado.
@@ -217,7 +217,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChanged 
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs transition shadow-lg shadow-orange-600/30 flex items-center justify-center space-x-1.5"
+              className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition shadow-lg shadow-purple-600/30 flex items-center justify-center space-x-1.5"
             >
               <UserPlus className="w-4 h-4" />
               <span>Crear Cuenta y Rellenar Cuestionario</span>

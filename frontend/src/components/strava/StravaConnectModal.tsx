@@ -135,7 +135,7 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-lg glass-panel p-6 sm:p-7 rounded-3xl border border-orange-500/30 shadow-2xl max-h-[92vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg glass-panel p-6 sm:p-7 rounded-3xl border border-purple-500/30 shadow-2xl max-h-[92vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-dark-muted hover:text-white transition p-1.5"
@@ -144,7 +144,7 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
         </button>
 
         <div className="flex items-center space-x-3 mb-5">
-          <div className="w-11 h-11 rounded-2xl bg-[#FC4C02] text-white flex items-center justify-center font-black text-xl shadow-lg shadow-orange-600/30">
+          <div className="w-11 h-11 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-purple-600/30">
             S
           </div>
           <div>
@@ -162,7 +162,7 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
               href="https://www.strava.com/settings/api"
               target="_blank"
               rel="noreferrer"
-              className="text-orange-400 hover:underline inline-flex items-center space-x-1 font-semibold"
+              className="text-purple-400 hover:underline inline-flex items-center space-x-1 font-semibold"
             >
               <span>Abrir strava.com/settings/api</span>
               <ExternalLink className="w-3 h-3" />
@@ -171,7 +171,7 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
           <p className="text-[11px] leading-relaxed">
             1. Entra en <strong className="text-white">strava.com/settings/api</strong>.<br />
             2. Copia tu <strong className="text-white">ID de cliente (Client ID)</strong> y pulsa <strong className="text-white">&quot;Mostrar&quot;</strong> en <strong className="text-white">Secreto del cliente (Client Secret)</strong> para copiarlo.<br />
-            3. Pulsa el botón naranja <strong className="text-orange-400">&quot;Autorizar con Strava en 1 Clic&quot;</strong> para importar todas tus actividades anteriores.
+            3. Pulsa el botón morado <strong className="text-purple-400">&quot;Autorizar con Strava en 1 Clic&quot;</strong> para importar todas tus actividades anteriores.
           </p>
         </div>
 
@@ -200,7 +200,7 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
                 placeholder="Ej: 123456"
-                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 font-mono"
+                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
               />
             </div>
 
@@ -213,7 +213,7 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
                 value={clientSecret}
                 onChange={(e) => setClientSecret(e.target.value)}
                 placeholder="Pega tu Secreto del cliente"
-                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 font-mono"
+                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
               />
             </div>
           </div>
@@ -221,7 +221,7 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
           <button
             type="button"
             onClick={handleOAuthRedirect}
-            className="w-full py-3 rounded-xl bg-[#FC4C02] hover:bg-[#e34402] text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-orange-600/30 transition flex items-center justify-center space-x-2"
+            className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-purple-600/30 transition flex items-center justify-center space-x-2"
           >
             <ShieldCheck className="w-4 h-4" />
             <span>Autorizar con Strava en 1 Clic (OAuth2 Completo)</span>
@@ -238,7 +238,7 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-semibold text-dark-muted mb-1 flex items-center space-x-1">
-                <Key className="w-3 h-3 text-orange-400" />
+                <Key className="w-3 h-3 text-purple-400" />
                 <span>Access Token</span>
               </label>
               <input
@@ -246,7 +246,7 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
                 value={accessToken}
                 onChange={(e) => setAccessToken(e.target.value)}
                 placeholder="Pega tu Access Token"
-                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
               />
             </div>
 
@@ -259,7 +259,7 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
                 value={refreshToken}
                 onChange={(e) => setRefreshToken(e.target.value)}
                 placeholder="Pega tu Refresh Token"
-                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
               />
             </div>
           </div>
@@ -267,7 +267,7 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
           <button
             type="submit"
             disabled={isLoading || (!accessToken && !refreshToken)}
-            className="w-full py-2.5 rounded-xl bg-dark-bg hover:bg-dark-border border border-orange-500/40 text-orange-400 font-bold text-xs transition flex items-center justify-center space-x-2 disabled:opacity-40"
+            className="w-full py-2.5 rounded-xl bg-dark-bg hover:bg-dark-border border border-purple-500/40 text-purple-400 font-bold text-xs transition flex items-center justify-center space-x-2 disabled:opacity-40"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
             <span>{isLoading ? "Sincronizando historial de Strava..." : "Sincronizar con Token Directo"}</span>

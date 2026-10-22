@@ -24,11 +24,11 @@ export default function MobileNav() {
             href={item.href}
             className={`flex flex-col items-center justify-center space-y-1 py-1 px-4 rounded-xl transition ${
               isActive
-                ? "text-orange-400 font-bold"
+                ? "text-purple-400 font-bold"
                 : "text-dark-muted hover:text-white"
             }`}
           >
-            <Icon className={`w-5 h-5 ${isActive ? "text-orange-400 scale-110" : ""}`} />
+            <Icon className={`w-5 h-5 ${isActive ? "text-purple-400 scale-110" : ""}`} />
             <span className="text-[10px] font-medium">{item.name}</span>
           </Link>
         );

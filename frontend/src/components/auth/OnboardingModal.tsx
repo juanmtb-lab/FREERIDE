@@ -56,9 +56,9 @@ export default function OnboardingModal({ user, isOpen, onCompleted }: Onboardin
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-dark-card border border-orange-500/40 rounded-3xl p-6 sm:p-8 max-w-xl w-full space-y-6 relative shadow-2xl animate-fade-in my-8">
+      <div className="bg-dark-card border border-purple-500/40 rounded-3xl p-6 sm:p-8 max-w-xl w-full space-y-6 relative shadow-2xl animate-fade-in my-8">
         <div className="flex items-center space-x-3.5 border-b border-dark-border pb-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center shadow-lg shadow-purple-500/30">
             <Sparkles className="w-6 h-6" />
           </div>
           <div>
@@ -81,12 +81,12 @@ export default function OnboardingModal({ user, isOpen, onCompleted }: Onboardin
                 max={99}
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
-                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-purple-500"
               />
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-dark-muted mb-1 flex items-center space-x-1">
-                <Scale className="w-3 h-3 text-orange-400" />
+                <Scale className="w-3 h-3 text-purple-400" />
                 <span>Peso (kg)</span>
               </label>
               <input
@@ -97,7 +97,7 @@ export default function OnboardingModal({ user, isOpen, onCompleted }: Onboardin
                 max={160}
                 value={weightKg}
                 onChange={(e) => setWeightKg(e.target.value)}
-                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-purple-500"
               />
             </div>
             <div>
@@ -111,7 +111,7 @@ export default function OnboardingModal({ user, isOpen, onCompleted }: Onboardin
                 max={225}
                 value={heightCm}
                 onChange={(e) => setHeightCm(e.target.value)}
-                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-purple-500"
               />
             </div>
           </div>
@@ -119,7 +119,7 @@ export default function OnboardingModal({ user, isOpen, onCompleted }: Onboardin
           {/* Fila 2: Nivel de experiencia */}
           <div>
             <label className="block text-xs font-semibold text-dark-muted mb-2 flex items-center space-x-1">
-              <Activity className="w-3.5 h-3.5 text-orange-400" />
+              <Activity className="w-3.5 h-3.5 text-purple-400" />
               <span>Nivel de Experiencia en Ciclismo</span>
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -135,7 +135,7 @@ export default function OnboardingModal({ user, isOpen, onCompleted }: Onboardin
                   onClick={() => setExperienceLevel(lvl.id as any)}
                   className={`p-2.5 rounded-xl border text-left transition ${
                     experienceLevel === lvl.id
-                      ? "bg-orange-500/20 border-orange-500 text-white shadow-md shadow-orange-500/20"
+                      ? "bg-purple-500/20 border-purple-500 text-white shadow-md shadow-purple-500/20"
                       : "bg-dark-bg border-dark-border text-dark-muted hover:text-white"
                   }`}
                 >
@@ -155,7 +155,7 @@ export default function OnboardingModal({ user, isOpen, onCompleted }: Onboardin
               <select
                 value={weeklyDaysTarget}
                 onChange={(e) => setWeeklyDaysTarget(e.target.value)}
-                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2.5 text-xs sm:text-sm font-semibold text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2.5 text-xs sm:text-sm font-semibold text-white focus:outline-none focus:border-purple-500"
               >
                 <option value="2">2 días / semana</option>
                 <option value="3">3 días / semana</option>
@@ -175,7 +175,7 @@ export default function OnboardingModal({ user, isOpen, onCompleted }: Onboardin
                 value={weeklyHoursTarget}
                 onChange={(e) => setWeeklyHoursTarget(e.target.value)}
                 placeholder="Ej: 6"
-                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-purple-500"
               />
             </div>
           </div>
@@ -199,7 +199,7 @@ export default function OnboardingModal({ user, isOpen, onCompleted }: Onboardin
                   placeholder="Ej: 185"
                   value={knownMaxHr}
                   onChange={(e) => setKnownMaxHr(e.target.value)}
-                  className="w-full bg-dark-card border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
+                  className="w-full bg-dark-card border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
                 />
               </div>
               <div>
@@ -212,7 +212,7 @@ export default function OnboardingModal({ user, isOpen, onCompleted }: Onboardin
                   placeholder="Ej: 240"
                   value={knownFtp}
                   onChange={(e) => setKnownFtp(e.target.value)}
-                  className="w-full bg-dark-card border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
+                  className="w-full bg-dark-card border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
                 />
               </div>
             </div>
@@ -220,7 +220,7 @@ export default function OnboardingModal({ user, isOpen, onCompleted }: Onboardin
 
           <button
             type="submit"
-            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-orange-600/30 transition flex items-center justify-center space-x-2"
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-purple-600/30 transition flex items-center justify-center space-x-2"
           >
             <span>Guardar Perfil y Empezar a Entrenar</span>
             <ArrowRight className="w-4 h-4" />

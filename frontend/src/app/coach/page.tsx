@@ -12,17 +12,14 @@ import {
   ShieldCheck,
   MessageSquare,
   Send,
-  Workflow,
   Flame,
   Activity,
   Sparkles
 } from "lucide-react";
-import N8nConfigModal from "@/components/coach/N8nConfigModal";
 
 export default function CoachPage() {
   const [coachData, setCoachData] = useState<CoachResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isN8nModalOpen, setIsN8nModalOpen] = useState(false);
 
   const [userQuery, setUserQuery] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
@@ -181,17 +178,18 @@ export default function CoachPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* 1. Header Banner */}
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-dark-card via-dark-card to-orange-950/40 border border-orange-500/30 space-y-5 relative overflow-hidden shadow-2xl">
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-dark-card via-dark-card to-purple-950/40 border border-purple-500/30 space-y-5 relative overflow-hidden shadow-2xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center shadow-lg shadow-purple-500/30">
               <BrainCircuit className="w-7 h-7" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="text-xl sm:text-2xl font-extrabold text-white">Entrenador Personal AI FREERIDE</h1>
-                <span className="bg-orange-500/20 text-orange-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-orange-500/30">
-                  {coachData?.source === "N8N_WORKFLOW" ? "Engine: N8N Workflow" : "Engine: Cycling Science AI"}
+                <span className="bg-purple-500/20 text-purple-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-purple-500/30 flex items-center space-x-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>{coachData?.source === "N8N_WORKFLOW" ? "Engine: N8N Workflow" : "Engine: Cycling Science AI"}</span>
                 </span>
               </div>
               <p className="text-xs text-dark-muted">
@@ -199,17 +197,6 @@ export default function CoachPage() {
               </p>
             </div>
           </div>
-
-          <button
-            onClick={() => setIsN8nModalOpen(true)}
-            className="self-start sm:self-auto flex items-center space-x-2 bg-dark-bg hover:bg-dark-border text-orange-400 border border-orange-500/30 text-xs font-semibold px-4 py-2.5 rounded-xl transition"
-          >
-            <Workflow className="w-4 h-4" />
-            <span>Configurar Workflow N8N</span>
-            {typeof window !== "undefined" && localStorage.getItem("freeride_n8n_webhook") ? (
-              <span className="w-2 h-2 rounded-full bg-emerald-400 ml-1 animate-pulse" title="Webhook n8n enlazado"></span>
-            ) : null}
-          </button>
         </div>
 
         <p className="text-xs sm:text-sm text-dark-muted max-w-3xl leading-relaxed">
@@ -272,7 +259,7 @@ export default function CoachPage() {
         <div className="glass-panel p-5 rounded-2xl border border-dark-border space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-dark-muted font-medium">Volumen Semanal</span>
-            <Calendar className="w-4 h-4 text-orange-400" />
+            <Calendar className="w-4 h-4 text-purple-400" />
           </div>
           <p className="text-2xl font-extrabold text-white">
             {metrics.weeklyDistanceKm} <span className="text-xs text-dark-muted font-normal">km</span>
@@ -288,7 +275,7 @@ export default function CoachPage() {
       <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-dark-border space-y-6">
         <div className="flex items-center justify-between border-b border-dark-border pb-4">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
               <MessageSquare className="w-5 h-5" />
             </div>
             <div>
@@ -305,7 +292,7 @@ export default function CoachPage() {
             className="p-2 text-dark-muted hover:text-white bg-dark-bg rounded-xl border border-dark-border transition"
             title="Recargar diagnóstico"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-orange-400" : ""}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-purple-400" : ""}`} />
           </button>
         </div>
 
@@ -322,7 +309,7 @@ export default function CoachPage() {
               type="button"
               onClick={() => submitCoachPrompt(quickPrompt)}
               disabled={chatLoading}
-              className="text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-xl bg-dark-bg hover:bg-orange-500/20 text-orange-300 border border-orange-500/30 transition disabled:opacity-50"
+              className="text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-xl bg-dark-bg hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 transition disabled:opacity-50"
             >
               {quickPrompt}
             </button>
@@ -332,7 +319,7 @@ export default function CoachPage() {
         <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
           {coachData && (
             <div className="bg-dark-bg/80 p-5 rounded-2xl border border-dark-border space-y-2">
-              <div className="flex items-center space-x-2 text-xs text-orange-400 font-bold">
+              <div className="flex items-center space-x-2 text-xs text-purple-400 font-bold">
                 <Sparkles className="w-4 h-4" />
                 <span>{coachData.title}</span>
               </div>
@@ -347,7 +334,7 @@ export default function CoachPage() {
               key={idx}
               className={`p-4 rounded-2xl text-xs sm:text-sm max-w-3xl space-y-1 ${
                 msg.role === "user"
-                  ? "bg-orange-600/20 border border-orange-500/30 text-white ml-auto"
+                  ? "bg-purple-600/20 border border-purple-500/30 text-white ml-auto"
                   : "bg-dark-bg/90 border border-dark-border text-dark-text mr-auto"
               }`}
             >
@@ -360,7 +347,7 @@ export default function CoachPage() {
           ))}
 
           {chatLoading && (
-            <div className="p-4 bg-dark-bg/90 rounded-2xl border border-dark-border text-xs text-orange-400 flex items-center space-x-2 animate-pulse">
+            <div className="p-4 bg-dark-bg/90 rounded-2xl border border-dark-border text-xs text-purple-400 flex items-center space-x-2 animate-pulse">
               <RefreshCw className="w-4 h-4 animate-spin" />
               <span>El Entrenador AI está procesando tu historial de Strava y preparando tu respuesta...</span>
             </div>
@@ -373,13 +360,13 @@ export default function CoachPage() {
             placeholder="Ej: Créame un test FTP adaptado a mí / ¿Qué entreno debo hacer hoy?"
             value={userQuery}
             onChange={(e) => setUserQuery(e.target.value)}
-            className="flex-1 bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-dark-muted focus:outline-none focus:border-orange-500"
+            className="flex-1 bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-dark-muted focus:outline-none focus:border-purple-500"
           />
 
           <button
             type="submit"
             disabled={chatLoading || !userQuery.trim()}
-            className="px-5 py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-orange-600/20 disabled:opacity-50 flex items-center space-x-2"
+            className="px-5 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-purple-600/25 disabled:opacity-50 flex items-center space-x-2"
           >
             <span>Enviar</span>
             <Send className="w-3.5 h-3.5" />
@@ -388,10 +375,10 @@ export default function CoachPage() {
       </div>
 
       {/* 3.5 Personalized FTP & LTHR Test Protocol + Zones Calculator */}
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-orange-500/30 bg-gradient-to-br from-dark-card via-dark-card to-orange-950/20 space-y-6">
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-purple-500/30 bg-gradient-to-br from-dark-card via-dark-card to-purple-950/20 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-dark-border pb-4">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
               <Zap className="w-5 h-5" />
             </div>
             <div>
@@ -403,7 +390,7 @@ export default function CoachPage() {
               </p>
             </div>
           </div>
-          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-300 self-start sm:self-auto">
+          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 self-start sm:self-auto">
             Protocolo Oficial Allen & Coggan (65 min)
           </span>
         </div>
@@ -431,8 +418,8 @@ export default function CoachPage() {
               5 min en <strong className="text-white">{z4Low}-{z4High + 4} bpm</strong> para vaciar la batería anaeróbica + 10 min muy suaves (&lt;{z1High} bpm).
             </p>
           </div>
-          <div className="p-3.5 rounded-2xl bg-orange-500/15 border border-orange-500/40 space-y-1">
-            <span className="text-[10px] font-extrabold uppercase text-orange-400">4. TEST FTP (20m)</span>
+          <div className="p-3.5 rounded-2xl bg-purple-500/15 border border-purple-500/40 space-y-1">
+            <span className="text-[10px] font-extrabold uppercase text-purple-400">4. TEST FTP (20m)</span>
             <p className="text-xs font-extrabold text-white">Esfuerzo Máximo Sostenido</p>
             <p className="text-[11px] text-gray-300 leading-relaxed">
               Subida tendida (3-5%) o llano. Min 0-5 a <strong className="text-white">{z4Low}-{estLthr} bpm</strong>, min 5-15 en <strong className="text-white">{estLthr}-{z4High} bpm</strong> y últimos 5m a tope.
@@ -453,7 +440,7 @@ export default function CoachPage() {
             <h3 className="text-xs sm:text-sm font-bold text-white">
               Calculadora de Resultado del Test (FTP en Vatios & Umbral LTHR en Pulsaciones)
             </h3>
-            <span className="text-[11px] text-orange-400 font-semibold">
+            <span className="text-[11px] text-purple-400 font-semibold">
               Fórmula: 95% de la media de tus 20 minutos
             </span>
           </div>
@@ -472,7 +459,7 @@ export default function CoachPage() {
                     localStorage.setItem("freeride_ftp_20m_w", e.target.value);
                   } catch {}
                 }}
-                className="w-full bg-dark-card border border-dark-border rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-dark-card border border-dark-border rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-purple-500"
               />
             </div>
 
@@ -489,7 +476,7 @@ export default function CoachPage() {
                     localStorage.setItem("freeride_ftp_20m_hr", e.target.value);
                   } catch {}
                 }}
-                className="w-full bg-dark-card border border-dark-border rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-dark-card border border-dark-border rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-purple-500"
               />
             </div>
 
@@ -506,14 +493,14 @@ export default function CoachPage() {
                     localStorage.setItem("freeride_rider_kg", e.target.value);
                   } catch {}
                 }}
-                className="w-full bg-dark-card border border-dark-border rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-dark-card border border-dark-border rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-purple-500"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-            <div className="p-3.5 rounded-xl bg-orange-500/10 border border-orange-500/30">
-              <p className="text-[10px] uppercase font-bold text-orange-300">Tu FTP Estimado (95%)</p>
+            <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30">
+              <p className="text-[10px] uppercase font-bold text-purple-300">Tu FTP Estimado (95%)</p>
               <p className="text-lg sm:text-xl font-black text-white">{calculatedFtp} W</p>
             </div>
             <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
@@ -559,10 +546,10 @@ export default function CoachPage() {
           {coachData?.weekly_plan?.map((workout, idx) => (
             <div
               key={idx}
-              className="bg-dark-bg/60 p-4 rounded-2xl border border-dark-border space-y-3 hover:border-orange-500/40 transition group"
+              className="bg-dark-bg/60 p-4 rounded-2xl border border-dark-border space-y-3 hover:border-purple-500/40 transition group"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold text-orange-400 uppercase tracking-wider">{workout.day}</span>
+                <span className="text-xs font-extrabold text-purple-400 uppercase tracking-wider">{workout.day}</span>
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
                     workout.intensity === "Descanso"
@@ -581,7 +568,7 @@ export default function CoachPage() {
               </div>
 
               <div>
-                <h3 className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors">
+                <h3 className="text-sm font-bold text-white group-hover:text-purple-400 transition-colors">
                   {workout.title}
                 </h3>
                 <p className="text-xs text-dark-muted mt-1 leading-relaxed">{workout.description}</p>
@@ -597,12 +584,6 @@ export default function CoachPage() {
           ))}
         </div>
       </div>
-
-      <N8nConfigModal
-        isOpen={isN8nModalOpen}
-        onClose={() => setIsN8nModalOpen(false)}
-        onSaved={() => loadCoachData()}
-      />
     </div>
   );
 }

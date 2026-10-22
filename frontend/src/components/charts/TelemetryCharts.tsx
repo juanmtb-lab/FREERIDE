@@ -152,7 +152,7 @@ export default function TelemetryCharts({
             <button
               onClick={onRefreshTelemetry}
               disabled={refreshingTelemetry}
-              className="px-4 py-2.5 rounded-xl bg-[#FC4C02] hover:bg-[#e34402] text-white text-xs font-bold flex items-center space-x-2 shrink-0 transition disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center space-x-2 shrink-0 transition shadow-lg shadow-purple-600/25 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${refreshingTelemetry ? "animate-spin" : ""}`} />
               <span>{refreshingTelemetry ? "Descargando de Strava..." : "Descargar Gráficas de Strava"}</span>

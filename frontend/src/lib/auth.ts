@@ -123,28 +123,31 @@ export function ensureInitialMigration(): UserProfile | null {
     let users = getAllUsers();
 
     if (users.length === 0) {
-      const cachedAthlete = localStorage.getItem("freeride_strava_athlete") || "JM TB";
       const cachedAuth = localStorage.getItem("freeride_strava_auth");
-      const ownerUser: UserProfile = {
-        id: "usr_jmtb",
-        name: cachedAthlete,
-        email: "jmtb@freeride.app",
-        createdAt: new Date().toISOString(),
-        onboardingCompleted: true,
-        stravaAuth: cachedAuth || undefined,
-        stravaAthleteName: cachedAthlete
-      };
-      users = [ownerUser];
-      localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(users));
+      // STRICT DEVICE ISOLATION: Only create JM TB profile if this exact browser has the owner's Strava auth tokens
+      if (cachedAuth) {
+        const cachedAthlete = localStorage.getItem("freeride_strava_athlete") || "JM TB";
+        const ownerUser: UserProfile = {
+          id: "usr_jmtb",
+          name: cachedAthlete,
+          email: "jmtb@freeride.app",
+          createdAt: new Date().toISOString(),
+          onboardingCompleted: true,
+          stravaAuth: cachedAuth,
+          stravaAthleteName: cachedAthlete
+        };
+        users = [ownerUser];
+        localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(users));
 
-      const oldActs = localStorage.getItem("freeride_strava_activities_v4");
-      if (oldActs) {
-        localStorage.setItem("freeride_strava_activities_usr_jmtb", oldActs);
-      }
+        const oldActs = localStorage.getItem("freeride_strava_activities_v4");
+        if (oldActs) {
+          localStorage.setItem("freeride_strava_activities_usr_jmtb", oldActs);
+        }
 
-      if (!isExplicitlyLoggedOut) {
-        localStorage.setItem(CURRENT_USER_KEY, "usr_jmtb");
-        return ownerUser;
+        if (!isExplicitlyLoggedOut) {
+          localStorage.setItem(CURRENT_USER_KEY, "usr_jmtb");
+          return ownerUser;
+        }
       }
       return null;
     }

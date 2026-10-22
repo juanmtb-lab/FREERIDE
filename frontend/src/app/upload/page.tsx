@@ -148,7 +148,7 @@ export default function UploadPage() {
           <button
             type="submit"
             disabled={loading || !file}
-            className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs sm:text-sm rounded-xl transition shadow-lg shadow-orange-600/20 disabled:opacity-50 flex items-center justify-center space-x-2"
+            className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm rounded-xl transition shadow-lg shadow-purple-600/20 disabled:opacity-50 flex items-center justify-center space-x-2"
           >
             {loading ? (
               <span>Procesando telemetría...</span>
