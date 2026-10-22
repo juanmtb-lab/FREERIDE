@@ -462,66 +462,67 @@ export async function queryAiCoach(
       qLower.includes('soltar'))
   ) {
     sessionTitle = 'Sesión Regenerativa y Recuperación Activa';
-    contentEs = `• **Diagnóstico de Forma:** TSB ${metrics.tsb > 0 ? `+${metrics.tsb}` : metrics.tsb} (${metrics.formStatus}) · Fatiga reciente ATL: ${metrics.atl} | Fitness CTL: ${metrics.ctl}.
-• **Distancia y Desnivel:** **${recovDistMin} - ${recovDistMax} km** en llano · Desnivel acumulado **< +180 m** (prohibido subir repechos duros).
-• **Duración e Intensidad:** **50 a 65 minutos** · Intensidad **Baja (Zona 1 - Z2 Regenerativa)**.
-• **Pulsaciones y Cadencia:** Rango **${z1Low} - ${z2Low} bpm** (techo máximo infranqueable: **${z2High} bpm**) · Cadencia ágil **88-94 rpm**.
-• **Potencia Estimada:** **110 - 145 W (1.5 - 2.0 W/kg)** sin hacer fuerza.
-• **Estructura de la Sesión:**
-  1. *Calentamiento (10 min):* Pedaleo progresivo muy suave a <${z1High} bpm.
-  2. *Bloque Central (35-45 min):* Rodaje continuo en llano a 90 rpm soltando ácido láctico.
-  3. *Vuelta a la Calma (10 min):* 5 min en Z1 baja (<${z1Low} bpm) + hidratación rica en sales.`;
+    contentEs = `• 📊 **Diagnóstico de Forma:** TSB ${metrics.tsb > 0 ? `+${metrics.tsb}` : metrics.tsb} (${metrics.formStatus}) · Fatiga reciente ATL: ${metrics.atl} | Fitness CTL: ${metrics.ctl}.
+• 📍 **Distancia y Desnivel:** **${recovDistMin} - ${recovDistMax} km** en llano · Desnivel acumulado **< +180 m** (sin repechos duros).
+• ⏱️ **Duración e Intensidad:** **50 a 65 minutos** · Intensidad **Baja (Zona 1 - Z2 Regenerativa)**.
+• ❤️ **Pulsaciones y Cadencia:** Rango **${z1Low} - ${z2Low} bpm** (techo máximo infranqueable: **${z2High} bpm**) · Cadencia ágil **88-94 rpm**.
+• ⚡ **Potencia Estimada:** **110 - 145 W (1.5 - 2.0 W/kg)** pedaleo suelto y fluido.
+• 📋 **Estructura de la Sesión:**
+  1. *🟢 Calentamiento (10 min):* Pedaleo progresivo muy suave a <${z1High} bpm.
+  2. *🟣 Bloque Central (35-45 min):* Rodaje continuo en llano a 90 rpm soltando ácido láctico.
+  3. *🔵 Vuelta a la Calma (10 min):* 5 min en Z1 baja (<${z1Low} bpm) + hidratación con electrolitos.`;
   } else if (isQuestion && (qLower.includes('ftp') || qLower.includes('test') || qLower.includes('umbral') || qLower.includes('potencia') || qLower.includes('vatios'))) {
     sessionTitle = 'Protocolo Oficial Test FTP 20 Minutos';
-    contentEs = `• **Diagnóstico Previo:** TSB ${metrics.tsb} (${metrics.formStatus}) · FC Máx observada: ${maxHr} bpm | Umbral estimado LTHR: ~${estLthr} bpm.
-• **Distancia y Desnivel:** **28 - 35 km** en puerto suave (3-5% constante) o tramo llano continuo sin rotondas · Desnivel **+350 a +500 m**.
-• **Duración e Intensidad:** **55 - 60 minutos totales** · Intensidad **Máxima Sostenida (Competición / Z4-Z5)**.
-• **Pulsaciones Objetivo:**
+    contentEs = `• 📊 **Diagnóstico Previo:** TSB ${metrics.tsb} (${metrics.formStatus}) · FC Máx observada: ${maxHr} bpm | Umbral estimado LTHR: ~${estLthr} bpm.
+• 📍 **Distancia y Recorrido:** **28 - 35 km** en puerto suave (3-5% constante) o tramo llano continuo sin rotondas · Desnivel **+350 a +500 m**.
+• ⏱️ **Duración e Intensidad:** **55 - 60 minutos totales** · Intensidad **Máxima Sostenida (Competición / Z4-Z5)**.
+• ❤️ **Pulsaciones Objetivo:**
   * Min 0 a 5: **${z4Low} - ${estLthr} bpm** (controlar la euforia inicial).
   * Min 5 a 15: **${estLthr} - ${z4High} bpm** (ritmo constante y concentración).
   * Min 15 a 20: **A tope (${z4High} - ${maxHr} bpm)** vaciando el depósito.
-• **Cadencia y W/kg:** **88 - 95 rpm** constante · Objetivo estimado: **3.0 - 3.6 W/kg** sostenidos.
-• **Estructura del Protocolo:**
-  1. *Calentamiento (15 min):* Rodaje Z2 (${z2Low}-${z2High} bpm) + 3 aceleraciones de 1 min a 100 rpm.
-  2. *Vaciado Anaeróbico (10 min):* 5 min fuertes a ${z4High} bpm + 5 min recuperación suave en Z1.
-  3. *🔥 TEST FTP (20 min):* Contrarreloj personal a tope sostenido.
-  4. *Vuelta a la calma (10 min):* 10 min soltando piernas a <${z1High} bpm.`;
+• ⚡ **Cadencia y W/kg:** **88 - 95 rpm** constante · Objetivo estimado: **3.0 - 3.6 W/kg** sostenidos.
+• 📋 **Estructura del Protocolo:**
+  1. *🟢 Calentamiento (15 min):* Rodaje Z2 (${z2Low}-${z2High} bpm) + 3 aceleraciones de 1 min a 100 rpm.
+  2. *🟠 Vaciado Anaeróbico (10 min):* 5 min fuertes a ${z4High} bpm + 5 min recuperación suave en Z1.
+  3. *🟣 TEST FTP (20 min):* Contrarreloj personal a tope sostenido manteniendo vatios estables.
+  4. *🔵 Vuelta a la calma (10 min):* 10 min soltando piernas a <${z1High} bpm.`;
   } else if (isQuestion && (qLower.includes('puerto') || qLower.includes('subi') || qLower.includes('montaña') || qLower.includes('escalar') || qLower.includes('repech'))) {
     sessionTitle = 'Entrenamiento Específico de Puertos y Desnivel';
-    contentEs = `• **Diagnóstico de Escalada:** Tu ratio actual en Strava es de **${metrics.elevRatioMPerKm} m/km** (Media: +${metrics.avgElevationM} m por ruta).
-• **Distancia y Desnivel:** **42 - 50 km** con puertos encadenados · Desnivel acumulado **+700 a +950 m**.
-• **Duración e Intensidad:** **90 a 110 minutos** · Intensidad **Alta (Series en Z4 Umbral)**.
-• **Pulsaciones y Cadencia:** En subida clavar **${z4Low} - ${z4High} bpm** a **76-82 rpm sentado** (Recuperación en bajada a <${z1High} bpm).
-• **Potencia Objetivo:** **210 - 250 W (2.9 - 3.4 W/kg)** en cada repetición de subida.
-• **Estructura de la Sesión:**
-  1. *Aproximación (20 min):* Z2 progresiva (${z2Low}-${z2High} bpm) a 90 rpm.
-  2. *Bloque Principal (50 min):* **3 repeticiones de 10 min de puerto al 5-7%** en Z4 estricto (Recuperación: 5 min bajando).
-  3. *Vuelta a la Calma (20 min):* Rodaje llano en Z1 (<${z1High} bpm).`;
+    contentEs = `• 📊 **Diagnóstico de Escalada:** Tu ratio actual en Strava es de **${metrics.elevRatioMPerKm} m/km** (Media: +${metrics.avgElevationM} m por ruta).
+• 📍 **Distancia y Desnivel:** **42 - 50 km** con puertos encadenados · Desnivel acumulado **+700 a +950 m**.
+• ⏱️ **Duración e Intensidad:** **90 a 110 minutos** · Intensidad **Alta (Series en Z4 Umbral)**.
+• ❤️ **Pulsaciones y Cadencia:** En subida clavar **${z4Low} - ${z4High} bpm** a **76-82 rpm sentado** (Recuperación en bajada a <${z1High} bpm).
+• ⚡ **Potencia Objetivo:** **210 - 250 W (2.9 - 3.4 W/kg)** en cada repetición de subida.
+• 📋 **Estructura de la Sesión:**
+  1. *🟢 Aproximación (20 min):* Z2 progresiva (${z2Low}-${z2High} bpm) a 90 rpm.
+  2. *🟣 Bloque Principal (50 min):* **3 repeticiones de 10 min de puerto al 5-7%** en Z4 estricto (Recuperación: 5 min bajando).
+  3. *🔵 Vuelta a la Calma (20 min):* Rodaje llano en Z1 (<${z1High} bpm).`;
   } else if (isQuestion && (qLower.includes('100') || qLower.includes('fondo') || qLower.includes('larga') || qLower.includes('sabado') || qLower.includes('finde'))) {
-    sessionTitle = 'Salida Reina de Fondo (Plan Sábado)';
-    contentEs = `• **Diagnóstico de Resistencia:** Tu récord histórico en Strava es de **${metrics.maxDistanceKm} km** (Media: ${metrics.avgDistanceKm} km).
-• **Distancia y Desnivel:** **85 - 110 km** por carretera secundaria · Desnivel **+1.100 a +1.450 m**.
-• **Duración e Intensidad:** **3h 30m a 4h 15m** · Intensidad **Media-Alta Controlada (Z2-Z3 con picos Z4)**.
-• **Pulsaciones Estratégicas:**
+    sessionTitle = 'Salida Reina de Fondo y Resistencia Aeróbica';
+    contentEs = `• 📊 **Diagnóstico de Resistencia:** Tu récord histórico en Strava es de **${metrics.maxDistanceKm} km** (Media: ${metrics.avgDistanceKm} km).
+• 📍 **Distancia y Desnivel:** **85 - 110 km** por carretera secundaria · Desnivel **+1.100 a +1.450 m**.
+• ⏱️ **Duración e Intensidad:** **3h 30m a 4h 15m** · Intensidad **Media-Alta Controlada (Z2-Z3 con picos Z4)**.
+• ❤️ **Pulsaciones Estratégicas:**
   * Llaneo y grupetta: **${z2Low} - ${z2High} bpm (Z2 Base)**.
   * Puertos y repechos: **${z3Low} - ${z3High} bpm (Z3 Tempo)** sin cebarse.
-• **Nutrición e Hidratación:** Ingerir **60g carbohidratos/hora** (1 gel o barrita cada 45m desde el km 30) + 500 ml isotónico/hora.`;
+• ⚡ **Cadencia Recomendada:** Mantener **86-92 rpm** para ahorrar glucógeno muscular.
+• 💧 **Nutrición e Hidratación:** Ingerir **60-80g carbohidratos/hora** (1 gel o barrita cada 45m desde el km 30) + 500 ml isotónico/hora.`;
   } else if (isQuestion) {
     sessionTitle = `Prescripción Técnica Específica (${metrics.riderProfileType})`;
-    contentEs = `• **Diagnóstico Actual:** Forma TSB: ${metrics.tsb} (${metrics.formStatus}) · Fatiga ATL: ${metrics.atl} | FC Media habitual: ${metrics.avgHrLastRides} bpm.
-• **Distancia y Desnivel:** **${Math.round(baseDist * 0.95)} - ${Math.round(baseDist * 1.15)} km** · Desnivel recomendado **+${Math.round(baseElev * 0.9)} a +${Math.round(baseElev * 1.1)} m**.
-• **Duración e Intensidad:** **75 a 85 minutos** · Intensidad **Mixta Polarizada (Base Z2 + Intervalos Z4)**.
-• **Pulsaciones y Cadencia:** Rodaje a **${z2Low} - ${z2High} bpm** (90 rpm) con series a **${z4Low} - ${z4High} bpm**.
-• **Estructura de la Sesión:**
-  1. *Calentamiento (15 min):* Z2 continua a 90 rpm.
-  2. *Series Calidad (30 min):* **3 × 8 min en Umbral Z4 (${z4Low}-${z4High} bpm)** con 4 min de recuperación en Z1.
-  3. *Regenerativo (20 min):* Soltar piernas en Z1 (<${z1High} bpm).`;
+    contentEs = `• 📊 **Diagnóstico Actual:** Forma TSB: ${metrics.tsb} (${metrics.formStatus}) · Fatiga ATL: ${metrics.atl} | FC Media habitual: ${metrics.avgHrLastRides} bpm.
+• 📍 **Distancia y Desnivel:** **${Math.round(baseDist * 0.95)} - ${Math.round(baseDist * 1.15)} km** · Desnivel recomendado **+${Math.round(baseElev * 0.9)} a +${Math.round(baseElev * 1.1)} m**.
+• ⏱️ **Duración e Intensidad:** **75 a 85 minutos** · Intensidad **Mixta Polarizada (Base Z2 + Intervalos Z4)**.
+• ❤️ **Pulsaciones y Cadencia:** Rodaje a **${z2Low} - ${z2High} bpm** (90 rpm) con series a **${z4Low} - ${z4High} bpm**.
+• 📋 **Estructura de la Sesión:**
+  1. *🟢 Calentamiento (15 min):* Z2 continua a 90 rpm.
+  2. *🟣 Series Calidad (30 min):* **3 × 8 min en Umbral Z4 (${z4Low}-${z4High} bpm)** con 4 min de recuperación en Z1.
+  3. *🔵 Regenerativo (20 min):* Soltar piernas en Z1 (<${z1High} bpm).`;
   } else {
     sessionTitle = 'Ficha Técnica de Estado y Rendimiento';
-    contentEs = `• **Perfil Analizado (${metrics.totalActivities || 0} salidas en Strava):** ${metrics.riderProfileType} · Media **${metrics.avgDistanceKm} km** (+${metrics.avgElevationM} m).
-• **Fisiología Real:** FC Media **${metrics.avgHrLastRides} bpm** | FC Máxima **${maxHr} bpm** | Umbral LTHR est. **${estLthr} bpm**.
-• **Estado de Carga:** Fitness (CTL) **${metrics.ctl}** · Fatiga (ATL) **${metrics.atl}** · Forma (TSB) **${metrics.tsb}** (${metrics.formStatus}).
-• **Pauta de Calibración:** Concéntrate en rodar en **Z2 (${z2Low}-${z2High} bpm)** el 75% del tiempo y reserva el **Z4 (${z4Low}-${z4High} bpm)** para el día de calidad.`;
+    contentEs = `• 📊 **Perfil Analizado (${metrics.totalActivities || 0} salidas en Strava):** ${metrics.riderProfileType} · Media **${metrics.avgDistanceKm} km** (+${metrics.avgElevationM} m).
+• ❤️ **Fisiología Real:** FC Media **${metrics.avgHrLastRides} bpm** | FC Máxima **${maxHr} bpm** | Umbral LTHR est. **${estLthr} bpm**.
+• 📈 **Estado de Carga:** Fitness (CTL) **${metrics.ctl}** · Fatiga (ATL) **${metrics.atl}** · Forma (TSB) **${metrics.tsb}** (${metrics.formStatus}).
+• 🎯 **Pauta de Calibración:** Concéntrate en rodar en **Z2 (${z2Low}-${z2High} bpm)** el 75% del tiempo y reserva el **Z4 (${z4Low}-${z4High} bpm)** para el día de calidad.`;
   }
 
   return {

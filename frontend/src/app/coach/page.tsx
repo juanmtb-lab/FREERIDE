@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { CoachResponse, RiderFitnessMetrics } from "@/lib/n8n_coach";
 import { getStravaAuthHeaders, getStravaCacheKey } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
+import CoachMessageRenderer from "@/components/coach/CoachMessageRenderer";
 import {
   BrainCircuit,
   Calendar,
@@ -349,33 +350,37 @@ export default function CoachPage() {
           ))}
         </div>
 
-        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+        <div className="space-y-4 max-h-[30rem] overflow-y-auto pr-2">
           {coachData && (
-            <div className="bg-dark-bg/80 p-5 rounded-2xl border border-dark-border space-y-2">
-              <div className="flex items-center space-x-2 text-xs text-purple-400 font-bold">
-                <Sparkles className="w-4 h-4" />
+            <div className="bg-dark-bg/85 p-5 rounded-2xl border border-purple-500/30 space-y-3 shadow-lg">
+              <div className="flex items-center space-x-2 text-xs text-purple-400 font-extrabold pb-2 border-b border-dark-border/60">
+                <Sparkles className="w-4 h-4 text-purple-400" />
                 <span>{coachData.title}</span>
               </div>
-              <div className="prose prose-invert max-w-none text-xs sm:text-sm text-dark-text leading-relaxed whitespace-pre-line">
-                {coachData.content_es}
-              </div>
+              <CoachMessageRenderer content={coachData.content_es} />
             </div>
           )}
 
           {chatMessages.map((msg, idx) => (
             <div
               key={idx}
-              className={`p-4 rounded-2xl text-xs sm:text-sm max-w-3xl space-y-1 ${
+              className={`p-4 rounded-2xl text-xs sm:text-sm max-w-3xl space-y-2 ${
                 msg.role === "user"
                   ? "bg-purple-600/20 border border-purple-500/30 text-white ml-auto"
-                  : "bg-dark-bg/90 border border-dark-border text-dark-text mr-auto"
+                  : "bg-dark-bg/90 border border-purple-500/25 text-dark-text mr-auto shadow-md"
               }`}
             >
-              <div className="flex items-center justify-between text-[10px] text-dark-muted mb-1">
-                <span className="font-bold">{msg.role === "user" ? "Tú" : "Entrenador AI FREERIDE"}</span>
+              <div className="flex items-center justify-between text-[10px] text-dark-muted pb-1 border-b border-dark-border/40 mb-1.5">
+                <span className="font-extrabold text-purple-400">
+                  {msg.role === "user" ? "Tú" : "🤖 Entrenador Personal FREERIDE"}
+                </span>
                 <span>{msg.time}</span>
               </div>
-              <div className="whitespace-pre-line leading-relaxed">{msg.text}</div>
+              {msg.role === "user" ? (
+                <div className="text-white font-medium text-xs sm:text-sm leading-relaxed">{msg.text}</div>
+              ) : (
+                <CoachMessageRenderer content={msg.text} />
+              )}
             </div>
           ))}
 
