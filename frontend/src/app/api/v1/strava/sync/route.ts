@@ -11,6 +11,9 @@ export const revalidate = 0;
 
 export async function POST(request: Request) {
   try {
+    const userId = request.headers.get('x-user-id') || undefined;
+    const isOwner = !userId || userId === 'principal' || userId === 'usr_jmtb' || userId === 'default';
+
     let clientId: string | undefined;
     let clientSecret: string | undefined;
     let accessToken: string | undefined;
@@ -29,10 +32,10 @@ export async function POST(request: Request) {
     } catch {}
 
     const existing = getStravaSession(request);
-    if (!clientId) clientId = existing?.clientId || process.env.STRAVA_CLIENT_ID;
-    if (!clientSecret) clientSecret = existing?.clientSecret || process.env.STRAVA_CLIENT_SECRET;
-    if (!accessToken) accessToken = existing?.accessToken || process.env.STRAVA_ACCESS_TOKEN;
-    if (!refreshToken) refreshToken = existing?.refreshToken || process.env.STRAVA_REFRESH_TOKEN;
+    if (!clientId) clientId = existing?.clientId || (isOwner ? process.env.STRAVA_CLIENT_ID : undefined);
+    if (!clientSecret) clientSecret = existing?.clientSecret || (isOwner ? process.env.STRAVA_CLIENT_SECRET : undefined);
+    if (!accessToken) accessToken = existing?.accessToken || (isOwner ? process.env.STRAVA_ACCESS_TOKEN : undefined);
+    if (!refreshToken) refreshToken = existing?.refreshToken || (isOwner ? process.env.STRAVA_REFRESH_TOKEN : undefined);
 
     // If returning from 1-click Strava OAuth2 authorize screen with ?code=...
     if (oauthCode) {
@@ -46,7 +49,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const oauthSession = await exchangeStravaCodeForToken(oauthCode, clientId, clientSecret);
+      const oauthSession = await exchangeStravaCodeForToken(oauthCode, clientId, clientSecret, userId);
       accessToken = oauthSession.accessToken;
       refreshToken = oauthSession.refreshToken;
     }
@@ -67,7 +70,7 @@ export async function POST(request: Request) {
         clientSecret,
         accessToken: accessToken || '',
         refreshToken
-      });
+      }, userId);
     }
 
     const { activities, syncedCount, session } = await syncStravaActivitiesLive({
@@ -75,7 +78,8 @@ export async function POST(request: Request) {
       clientSecret,
       accessToken,
       refreshToken,
-      request
+      request,
+      userId
     });
 
     const summaries = activities.map(({ telemetry_points, ...summary }) => summary);

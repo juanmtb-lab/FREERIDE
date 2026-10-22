@@ -2,8 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-function getDataFilePath(): string {
-  const filename = 'freeride_data.json';
+function getDataFilePath(userId?: string): string {
+  const cleanUser = userId ? userId.replace(/[^a-zA-Z0-9_-]/g, '') : '';
+  const isOwner = !cleanUser || cleanUser === 'principal' || cleanUser === 'usr_jmtb' || cleanUser === 'default';
+  const filename = isOwner ? 'freeride_data.json' : `freeride_data_${cleanUser}.json`;
   if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
     return path.join(os.tmpdir(), filename);
   }
@@ -55,9 +57,9 @@ export interface FreerideSettings {
   rider_ftp?: number;
 }
 
-export function getStoredActivities(): StoredActivity[] {
+export function getStoredActivities(userId?: string): StoredActivity[] {
   try {
-    const file = getDataFilePath();
+    const file = getDataFilePath(userId);
     if (!fs.existsSync(file)) {
       return [];
     }
@@ -69,15 +71,15 @@ export function getStoredActivities(): StoredActivity[] {
     parsed.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
     return parsed;
   } catch (error) {
-    console.error('Error reading freeride_data.json:', error);
+    console.error(`Error reading ${getDataFilePath(userId)}:`, error);
     return [];
   }
 }
 
-export function saveActivitiesBatch(newActivities: StoredActivity[]): StoredActivity[] {
+export function saveActivitiesBatch(newActivities: StoredActivity[], userId?: string): StoredActivity[] {
   try {
-    const file = getDataFilePath();
-    const existingList = getStoredActivities();
+    const file = getDataFilePath(userId);
+    const existingList = getStoredActivities(userId);
     const map = new Map<string, StoredActivity>();
 
     for (const item of existingList) {
@@ -127,20 +129,27 @@ export function saveActivitiesBatch(newActivities: StoredActivity[]): StoredActi
   }
 }
 
-export function saveActivity(activity: StoredActivity): StoredActivity {
-  const merged = saveActivitiesBatch([activity]);
+export function saveActivity(activity: StoredActivity, userId?: string): StoredActivity {
+  const merged = saveActivitiesBatch([activity], userId);
   return merged.find(a => String(a.id) === String(activity.id)) || activity;
 }
 
-export function getActivityById(id: string): StoredActivity | null {
-  const activities = getStoredActivities();
-  return activities.find(a => String(a.id) === String(id)) || null;
+export function getActivityById(id: string, userId?: string): StoredActivity | null {
+  const activities = getStoredActivities(userId);
+  const found = activities.find(a => String(a.id) === String(id));
+  if (found) return found;
+  // If not found in user file and user is not owner, check general file
+  if (userId) {
+    const general = getStoredActivities();
+    return general.find(a => String(a.id) === String(id)) || null;
+  }
+  return null;
 }
 
-export function deleteActivityById(id: string): boolean {
+export function deleteActivityById(id: string, userId?: string): boolean {
   try {
-    const file = getDataFilePath();
-    const activities = getStoredActivities();
+    const file = getDataFilePath(userId);
+    const activities = getStoredActivities(userId);
     const filtered = activities.filter(a => String(a.id) !== String(id));
     fs.writeFileSync(file, JSON.stringify(filtered, null, 2), 'utf-8');
     return filtered.length < activities.length;

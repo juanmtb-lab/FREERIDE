@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { UserProfile } from "@/types/auth";
-import { getAllUsers, loginUser, registerUser, logoutUser } from "@/lib/auth";
-import { User, UserPlus, LogIn, LogOut, Check, ChevronDown, X } from "lucide-react";
+import { getAllUsers, loginUser, registerUser, logoutUser, deleteUser } from "@/lib/auth";
+import { User, UserPlus, LogIn, LogOut, Check, ChevronDown, X, Trash2 } from "lucide-react";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -138,13 +138,31 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChanged 
                         )}
                       </div>
 
-                      {isActive ? (
-                        <Check className="w-5 h-5 text-orange-400 shrink-0" />
-                      ) : (
-                        <span className="text-[11px] font-bold text-orange-400 hover:underline">
-                          Cambiar
-                        </span>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        {isActive ? (
+                          <Check className="w-5 h-5 text-orange-400 shrink-0" />
+                        ) : (
+                          <span className="text-[11px] font-bold text-orange-400 hover:underline">
+                            Cambiar
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`¿Eliminar el perfil de ${u.name}?`)) {
+                              deleteUser(u.id);
+                              if (currentUser?.id === u.id) {
+                                onUserChanged(null);
+                              }
+                            }
+                          }}
+                          className="p-1 text-dark-muted hover:text-rose-400 transition"
+                          title="Eliminar perfil"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -159,7 +177,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChanged 
                   className="text-xs text-rose-400 hover:text-rose-300 transition flex items-center space-x-1 font-semibold"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>Cerrar sesión actual</span>
+                  <span>Cerrar sesión de {currentUser.name}</span>
                 </button>
               </div>
             )}

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { X, RefreshCw, Key, ShieldCheck, AlertCircle, CheckCircle2, ExternalLink } from "lucide-react";
-import { saveStravaAuthClient } from "@/lib/api";
+import { saveStravaAuthClient, getStravaAuthHeaders, getStravaCacheKey } from "@/lib/api";
+import { getCurrentUser, getUserStorageKey, saveUser } from "@/lib/auth";
 
 interface StravaConnectModalProps {
   isOpen: boolean;
@@ -26,8 +27,9 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
         setError(initialError);
       }
       try {
-        const savedCid = localStorage.getItem("freeride_strava_cid");
-        const savedSec = localStorage.getItem("freeride_strava_csec");
+        const user = getCurrentUser();
+        const savedCid = user?.stravaClientId || localStorage.getItem(getUserStorageKey("freeride_strava_cid")) || localStorage.getItem("freeride_strava_cid");
+        const savedSec = user?.stravaClientSecret || localStorage.getItem(getUserStorageKey("freeride_strava_csec")) || localStorage.getItem("freeride_strava_csec");
         if (savedCid) setClientId(savedCid);
         if (savedSec) setClientSecret(savedSec);
       } catch {}
@@ -43,14 +45,22 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
       setError("Para autorizar en 1 clic con OAuth2, introduce primero tu Client ID y Client Secret de Strava.");
       return;
     }
+    const user = getCurrentUser();
     try {
+      localStorage.setItem(getUserStorageKey("freeride_strava_cid"), cleanCid);
+      localStorage.setItem(getUserStorageKey("freeride_strava_csec"), cleanSec);
       localStorage.setItem("freeride_strava_cid", cleanCid);
       localStorage.setItem("freeride_strava_csec", cleanSec);
+      if (user) {
+        user.stravaClientId = cleanCid;
+        user.stravaClientSecret = cleanSec;
+        saveUser(user);
+      }
     } catch {}
 
     const origin = window.location.origin;
     const redirectUri = `${origin}/`;
-    const statePayload = btoa(JSON.stringify({ cid: cleanCid, csec: cleanSec }));
+    const statePayload = btoa(JSON.stringify({ cid: cleanCid, csec: cleanSec, uid: user?.id }));
 
     const oauthUrl = `https://www.strava.com/oauth/authorize?client_id=${encodeURIComponent(
       cleanCid
@@ -69,13 +79,25 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
     setError(null);
     setSuccessMsg(null);
 
+    const user = getCurrentUser();
+
     try {
-      if (clientId.trim()) localStorage.setItem("freeride_strava_cid", clientId.trim());
-      if (clientSecret.trim()) localStorage.setItem("freeride_strava_csec", clientSecret.trim());
+      if (clientId.trim()) {
+        localStorage.setItem(getUserStorageKey("freeride_strava_cid"), clientId.trim());
+        if (user) user.stravaClientId = clientId.trim();
+      }
+      if (clientSecret.trim()) {
+        localStorage.setItem(getUserStorageKey("freeride_strava_csec"), clientSecret.trim());
+        if (user) user.stravaClientSecret = clientSecret.trim();
+      }
+      if (user) saveUser(user);
 
       const res = await fetch("/api/v1/strava/sync", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getStravaAuthHeaders()
+        },
         body: JSON.stringify({
           client_id: clientId.trim() || undefined,
           client_secret: clientSecret.trim() || undefined,
@@ -94,7 +116,7 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
       }
       if (data.activities && Array.isArray(data.activities)) {
         try {
-          localStorage.setItem("freeride_strava_activities_v4", JSON.stringify(data.activities));
+          localStorage.setItem(getStravaCacheKey(), JSON.stringify(data.activities));
         } catch {}
       }
 

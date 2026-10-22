@@ -6,14 +6,20 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET(request: Request) {
-  let activities = getStoredActivities();
+  const userId = request.headers.get('x-user-id') || undefined;
+  const isOwner = !userId || userId === 'principal' || userId === 'usr_jmtb' || userId === 'default';
+
+  let activities = getStoredActivities(userId);
 
   if (activities.length === 0) {
-    try {
-      const synced = await syncStravaActivitiesLive({ request });
-      activities = synced.activities;
-    } catch (err) {
-      console.log('Live Strava sync on GET /activities error:', err);
+    const hasStravaAuth = Boolean(request.headers.get('x-strava-auth'));
+    if (isOwner || hasStravaAuth) {
+      try {
+        const synced = await syncStravaActivitiesLive({ request, userId });
+        activities = synced.activities;
+      } catch (err) {
+        console.log('Live Strava sync on GET /activities error:', err);
+      }
     }
   }
 

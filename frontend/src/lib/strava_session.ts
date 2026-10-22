@@ -2,8 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-function getSessionFilePath(): string {
-  const filename = 'freeride_strava_session.json';
+function getSessionFilePath(userId?: string): string {
+  const cleanUser = userId ? userId.replace(/[^a-zA-Z0-9_-]/g, '') : '';
+  const isOwner = !cleanUser || cleanUser === 'principal' || cleanUser === 'usr_jmtb' || cleanUser === 'default';
+  const filename = isOwner ? 'freeride_strava_session.json' : `freeride_strava_session_${cleanUser}.json`;
   if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
     return path.join(os.tmpdir(), filename);
   }
@@ -21,7 +23,7 @@ export interface StravaSessionData {
   connectedAt: string;
 }
 
-export function saveStravaSession(partial: Partial<StravaSessionData>): StravaSessionData {
+export function saveStravaSession(partial: Partial<StravaSessionData>, userId?: string): StravaSessionData {
   const current = getStravaSession();
   const data: StravaSessionData = {
     clientId: partial.clientId ?? current?.clientId ?? process.env.STRAVA_CLIENT_ID,
@@ -35,7 +37,7 @@ export function saveStravaSession(partial: Partial<StravaSessionData>): StravaSe
   };
 
   try {
-    const file = getSessionFilePath();
+    const file = getSessionFilePath(userId);
     fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
   } catch (error) {
     console.error('Error saving Strava session:', error);
@@ -45,6 +47,9 @@ export function saveStravaSession(partial: Partial<StravaSessionData>): StravaSe
 }
 
 export function getStravaSession(request?: Request): StravaSessionData | null {
+  const userId = request?.headers?.get('x-user-id') || undefined;
+  const isOwner = !userId || userId === 'principal' || userId === 'usr_jmtb' || userId === 'default';
+
   // 1. Hydrate from client header (solves Vercel serverless cold starts)
   if (request) {
     try {
@@ -53,7 +58,7 @@ export function getStravaSession(request?: Request): StravaSessionData | null {
         const decoded = JSON.parse(Buffer.from(authHeader, 'base64').toString('utf-8'));
         if (decoded && (decoded.accessToken || decoded.refreshToken)) {
           try {
-            const file = getSessionFilePath();
+            const file = getSessionFilePath(userId);
             if (!fs.existsSync(file)) {
               fs.writeFileSync(file, JSON.stringify(decoded, null, 2), 'utf-8');
             }
@@ -64,7 +69,23 @@ export function getStravaSession(request?: Request): StravaSessionData | null {
     } catch {}
   }
 
-  // 2. Read from /tmp session file
+  // If this request belongs to a specific secondary user and no valid auth header was passed:
+  // ONLY look for their own session file. NEVER fall back to owner's session file or env vars!
+  if (!isOwner) {
+    try {
+      const file = getSessionFilePath(userId);
+      if (fs.existsSync(file)) {
+        const raw = fs.readFileSync(file, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (parsed && (parsed.accessToken || parsed.refreshToken)) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return null;
+  }
+
+  // 2. Read from /tmp session file for owner
   try {
     const file = getSessionFilePath();
     if (fs.existsSync(file)) {
@@ -76,13 +97,14 @@ export function getStravaSession(request?: Request): StravaSessionData | null {
     }
   } catch {}
 
-  // 3. Fallback to Vercel Environment Variables
+  // 3. Fallback to Vercel Environment Variables ONLY for the primary owner
   if (process.env.STRAVA_ACCESS_TOKEN || (process.env.STRAVA_CLIENT_ID && process.env.STRAVA_CLIENT_SECRET && process.env.STRAVA_REFRESH_TOKEN)) {
     return {
       clientId: process.env.STRAVA_CLIENT_ID,
       clientSecret: process.env.STRAVA_CLIENT_SECRET,
       accessToken: process.env.STRAVA_ACCESS_TOKEN || '',
       refreshToken: process.env.STRAVA_REFRESH_TOKEN,
+      athleteName: process.env.STRAVA_ATHLETE_NAME || 'JM TB',
       connectedAt: new Date().toISOString()
     };
   }
@@ -145,7 +167,8 @@ export async function refreshStravaTokenIfNeeded(
 export async function exchangeStravaCodeForToken(
   code: string,
   clientId: string,
-  clientSecret: string
+  clientSecret: string,
+  userId?: string
 ): Promise<StravaSessionData> {
   const cleanCid = clientId.trim();
   const cleanSec = clientSecret.trim();
@@ -182,7 +205,7 @@ export async function exchangeStravaCodeForToken(
             accessToken: cleanSec,
             athleteName,
             athleteId: String(athlete.id || '')
-          });
+          }, userId);
         }
       } catch {}
       throw new Error(
@@ -207,12 +230,12 @@ export async function exchangeStravaCodeForToken(
     expiresAt: tokenData.expires_at,
     athleteName,
     athleteId: String(athlete.id || '')
-  });
+  }, userId);
 }
 
-export function clearStravaSession(): void {
+export function clearStravaSession(userId?: string): void {
   try {
-    const file = getSessionFilePath();
+    const file = getSessionFilePath(userId);
     if (fs.existsSync(file)) {
       fs.unlinkSync(file);
     }

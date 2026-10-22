@@ -341,16 +341,19 @@ export async function analyzeSingleActivityWithCoach(activity: StoredActivity): 
 
 export async function queryAiCoach(
   userQuery?: string,
-  clientActivities?: StoredActivity[]
+  clientActivities?: StoredActivity[],
+  options?: { request?: Request; webhookUrlOverride?: string; userId?: string }
 ): Promise<CoachResponse> {
-  let activities = getStoredActivities();
+  const userId = options?.userId || options?.request?.headers?.get('x-user-id') || undefined;
+  let activities = getStoredActivities(userId);
   if ((!activities || activities.length === 0) && Array.isArray(clientActivities) && clientActivities.length > 0) {
     activities = clientActivities;
   }
   const settings = getSettings();
   const metrics = calculateRiderFitnessMetrics(activities);
 
-  const webhookUrl = settings.n8n_webhook_url || process.env.N8N_WORKFLOW_WEBHOOK_URL;
+  const headerWebhook = options?.request?.headers?.get('x-n8n-webhook-url');
+  const webhookUrl = options?.webhookUrlOverride || headerWebhook || settings.n8n_webhook_url || process.env.N8N_WORKFLOW_WEBHOOK_URL;
 
   if (webhookUrl && webhookUrl.startsWith('http')) {
     try {

@@ -41,11 +41,13 @@ export async function syncStravaActivitiesLive(options?: {
   accessToken?: string;
   refreshToken?: string;
   request?: Request;
+  userId?: string;
 }): Promise<{
   activities: StoredActivity[];
   syncedCount: number;
   session: StravaSessionData | null;
 }> {
+  const userId = options?.userId || options?.request?.headers?.get('x-user-id') || undefined;
   let session = getStravaSession(options?.request);
 
   if (options?.accessToken || options?.refreshToken || options?.clientId || options?.clientSecret) {
@@ -54,12 +56,12 @@ export async function syncStravaActivitiesLive(options?: {
       clientSecret: options.clientSecret || session?.clientSecret,
       accessToken: options.accessToken || session?.accessToken || '',
       refreshToken: options.refreshToken || session?.refreshToken
-    });
+    }, userId);
   }
 
   if (!session || (!session.accessToken && !session.refreshToken)) {
     return {
-      activities: getStoredActivities(),
+      activities: getStoredActivities(userId),
       syncedCount: 0,
       session: null
     };
@@ -82,7 +84,7 @@ export async function syncStravaActivitiesLive(options?: {
         ...session,
         athleteName: fullName,
         athleteId: String(athlete.id || '')
-      });
+      }, userId);
     }
   } catch (e) {
     console.log('Could not fetch Strava athlete profile:', e);
@@ -169,7 +171,7 @@ export async function syncStravaActivitiesLive(options?: {
 
     const stored: StoredActivity = {
       id: actId,
-      user_id: 'default-cyclist',
+      user_id: userId || 'usr_jmtb',
       title: stAct.name || 'Entrenamiento Strava',
       description: 'Sincronizada oficialmente desde Strava API v3',
       activity_type: activityType,
@@ -197,7 +199,7 @@ export async function syncStravaActivitiesLive(options?: {
     parsedBatch.push(stored);
   }
 
-  const mergedActivities = saveActivitiesBatch(parsedBatch);
+  const mergedActivities = saveActivitiesBatch(parsedBatch, userId);
 
   return {
     activities: mergedActivities,
@@ -210,8 +212,9 @@ export async function fetchStravaActivityTelemetry(
   actId: string,
   request?: Request
 ): Promise<StoredActivity | null> {
+  const userId = request?.headers?.get('x-user-id') || undefined;
   const cleanId = String(actId).replace(/^strava-/, '');
-  let activity = getActivityById(actId) || getActivityById(cleanId);
+  let activity = getActivityById(actId, userId) || getActivityById(cleanId, userId);
 
   if (
     activity &&
@@ -242,7 +245,7 @@ export async function fetchStravaActivityTelemetry(
         const isMTB = sportRaw.includes('mountain') || sportRaw.includes('mtb');
         activity = {
           id: cleanId,
-          user_id: 'default-cyclist',
+          user_id: userId || 'usr_jmtb',
           title: stAct.name || 'Entrenamiento Strava',
           description: stAct.description || 'Sincronizada desde Strava API v3',
           activity_type: isMTB ? 'MOUNTAIN_BIKE' : 'ROAD_BIKE',
@@ -455,5 +458,5 @@ export async function fetchStravaActivityTelemetry(
     max_cadence: computedMaxCad
   };
 
-  return saveActivity(updatedActivity);
+  return saveActivity(updatedActivity, userId);
 }

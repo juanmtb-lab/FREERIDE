@@ -7,7 +7,7 @@ import StravaConnectModal from "@/components/strava/StravaConnectModal";
 import AuthModal from "@/components/auth/AuthModal";
 import OnboardingModal from "@/components/auth/OnboardingModal";
 import { UserProfile } from "@/types/auth";
-import { getCurrentUser, registerUser } from "@/lib/auth";
+import { getCurrentUser, ensureInitialMigration } from "@/lib/auth";
 import {
   getStravaAuthHeaders,
   saveStravaAuthClient,
@@ -28,35 +28,22 @@ export default function Navbar() {
   const initAuthAndSession = async () => {
     purgeLegacyGarminCache();
 
-    let user = getCurrentUser();
-    // Auto-create initial default user if first time visiting
-    if (!user && typeof window !== "undefined") {
-      const cachedAthlete = localStorage.getItem("freeride_strava_athlete");
-      user = registerUser(cachedAthlete || "Mi Usuario", "principal@freeride.app");
-      // If Strava was already connected, bind it to this initial user
-      const existingAuth = localStorage.getItem("freeride_strava_auth");
-      if (existingAuth) {
-        user.stravaAuth = existingAuth;
-        user.stravaAthleteName = cachedAthlete || "Atleta Strava";
-        user.onboardingCompleted = true; // existing user already has history
-      }
-    }
+    const user = getCurrentUser() || ensureInitialMigration();
     setCurrentUser(user);
 
-    if (user && !user.onboardingCompleted) {
+    if (!user) {
+      setSession({ connected: false });
+      return;
+    }
+
+    if (!user.onboardingCompleted) {
       setIsOnboardingOpen(true);
     }
 
-    if (user?.stravaAthleteName || user?.stravaAuth) {
-      setSession({ connected: true, athleteName: user.stravaAthleteName || "Atleta Strava" });
-    } else if (typeof window !== "undefined") {
-      const cachedAthlete = localStorage.getItem("freeride_strava_athlete");
-      const cachedAuth = localStorage.getItem("freeride_strava_auth");
-      if (cachedAuth) {
-        setSession({ connected: true, athleteName: cachedAthlete || "Atleta Strava" });
-      } else {
-        setSession({ connected: false });
-      }
+    if (user.stravaAthleteName || user.stravaAuth) {
+      setSession({ connected: true, athleteName: user.stravaAthleteName || user.name });
+    } else {
+      setSession({ connected: false });
     }
 
     try {
@@ -68,7 +55,7 @@ export default function Navbar() {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.connected) {
+        if (data.connected && user) {
           setSession(data);
           return;
         }
@@ -83,7 +70,6 @@ export default function Navbar() {
     const handleSynced = () => initAuthAndSession();
     const handleAuthChanged = () => {
       initAuthAndSession();
-      window.location.reload();
     };
     window.addEventListener("strava-synced", handleSynced);
     window.addEventListener("auth-changed", handleAuthChanged);
@@ -167,18 +153,22 @@ export default function Navbar() {
           {/* User Profile Selector Pill */}
           <button
             onClick={() => setIsAuthModalOpen(true)}
-            className="flex items-center space-x-1.5 bg-dark-bg hover:bg-dark-border/80 border border-dark-border px-2.5 py-1.5 rounded-xl transition text-xs font-semibold text-white group"
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl transition text-xs font-semibold ${
+              currentUser
+                ? "bg-dark-bg hover:bg-dark-border/80 border border-dark-border text-white group"
+                : "bg-orange-600 hover:bg-orange-500 text-white font-bold shadow-md shadow-orange-600/30"
+            }`}
             title="Cambiar de usuario o invitar a un amigo"
           >
-            <div className="w-5 h-5 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className={`w-5 h-5 rounded-lg flex items-center justify-center ${currentUser ? "bg-orange-500/20 text-orange-400 group-hover:scale-105" : "bg-white/20 text-white"}`}>
               <User className="w-3.5 h-3.5" />
             </div>
             <span className="max-w-[90px] sm:max-w-[120px] truncate">
-              {currentUser?.name || "Usuario"}
+              {currentUser?.name || "Elegir Atleta"}
             </span>
           </button>
 
-          {session?.connected ? (
+          {currentUser && session?.connected ? (
             <div className="flex items-center space-x-1.5 sm:space-x-2 bg-dark-bg/80 border border-orange-500/40 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl">
               <span className="flex items-center space-x-1.5 text-[11px] sm:text-xs text-orange-400 font-semibold">
                 <span className="w-4 h-4 rounded bg-[#FC4C02] text-white flex items-center justify-center font-black text-[10px]">

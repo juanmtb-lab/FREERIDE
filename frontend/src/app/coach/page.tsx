@@ -37,7 +37,8 @@ export default function CoachPage() {
     if (typeof window === "undefined") return [];
     try {
       const user = getCurrentUser();
-      const isOwner = !user || user.id === "principal" || user.email === "principal@freeride.app";
+      if (!user) return [];
+      const isOwner = user.id === "principal" || user.id === "usr_jmtb" || user.email === "jmtb@freeride.app";
       const key = getStravaCacheKey();
       const raw = localStorage.getItem(key) || (isOwner ? localStorage.getItem("freeride_strava_activities_v4") : null);
       return raw ? JSON.parse(raw) : [];
@@ -205,6 +206,9 @@ export default function CoachPage() {
           >
             <Workflow className="w-4 h-4" />
             <span>Configurar Workflow N8N</span>
+            {typeof window !== "undefined" && localStorage.getItem("freeride_n8n_webhook") ? (
+              <span className="w-2 h-2 rounded-full bg-emerald-400 ml-1 animate-pulse" title="Webhook n8n enlazado"></span>
+            ) : null}
           </button>
         </div>
 

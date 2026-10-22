@@ -28,11 +28,13 @@ import {
   Sparkles
 } from "lucide-react";
 import StravaConnectModal from "@/components/strava/StravaConnectModal";
+import AuthModal from "@/components/auth/AuthModal";
 
 export default function Dashboard() {
   const [activities, setActivities] = useState<ActivitySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [isStravaModalOpen, setIsStravaModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [stravaSession, setStravaSession] = useState<{ connected: boolean; athleteName?: string } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncBanner, setSyncBanner] = useState<string | null>(null);
@@ -42,7 +44,14 @@ export default function Dashboard() {
     purgeLegacyGarminCache();
 
     const user = getCurrentUser();
-    const isOwner = !user || user.id === "principal" || user.email === "principal@freeride.app";
+    if (!user) {
+      setActivities([]);
+      setLoading(false);
+      setStravaSession({ connected: false });
+      return;
+    }
+
+    const isOwner = user.id === "principal" || user.id === "usr_jmtb" || user.email === "jmtb@freeride.app";
     const cacheKey = getStravaCacheKey();
 
     const local = localStorage.getItem(cacheKey) || (isOwner ? localStorage.getItem("freeride_strava_activities_v4") : null);
@@ -74,6 +83,12 @@ export default function Dashboard() {
       })
       .catch(() => setLoading(false));
 
+    if (user.stravaAthleteName || user.stravaAuth) {
+      setStravaSession({ connected: true, athleteName: user.stravaAthleteName || user.name });
+    } else {
+      setStravaSession({ connected: false });
+    }
+
     fetch("/api/v1/strava/session", {
       cache: "no-store",
       headers: {
@@ -82,16 +97,8 @@ export default function Dashboard() {
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.connected) {
+        if (data.connected && user) {
           setStravaSession(data);
-        } else {
-          const auth = user?.stravaAuth || (isOwner ? localStorage.getItem("freeride_strava_auth") : null);
-          const athlete = user?.stravaAthleteName || (isOwner ? localStorage.getItem("freeride_strava_athlete") : null);
-          if (auth) {
-            setStravaSession({ connected: true, athleteName: athlete || user?.name || "Atleta Strava" });
-          } else {
-            setStravaSession({ connected: false });
-          }
         }
       })
       .catch((e) => console.error(e));
@@ -248,6 +255,8 @@ export default function Dashboard() {
     }
   };
 
+  const activeUser = getCurrentUser();
+
   const totalDistance = activities.reduce((acc, a) => acc + (a.total_distance_m || 0), 0);
   const totalElevation = activities.reduce((acc, a) => acc + (a.elevation_gain_m || 0), 0);
   const totalTime = activities.reduce((acc, a) => acc + (a.moving_time_sec || 0), 0);
@@ -342,6 +351,31 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {!activeUser ? (
+        <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-orange-500/40 bg-gradient-to-br from-dark-card via-dark-card to-orange-950/20 text-center space-y-5 max-w-2xl mx-auto shadow-2xl">
+          <div className="w-16 h-16 rounded-3xl bg-orange-500/20 text-orange-400 flex items-center justify-center mx-auto shadow-lg shadow-orange-500/10">
+            <Bike className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white">
+              Sesión Cerrada · Selecciona tu Atleta
+            </h2>
+            <p className="text-xs sm:text-sm text-dark-muted max-w-md mx-auto">
+              Cada perfil almacena sus datos, entrenamientos y conexión a Strava de forma totalmente independiente.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="px-6 py-3 bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-xs sm:text-sm rounded-xl transition shadow-lg shadow-orange-600/30 flex items-center space-x-2"
+            >
+              <span>Elegir o Crear Perfil de Atleta</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
       {/* Metric Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
         <div className="glass-panel p-4 sm:p-5 rounded-2xl flex items-center space-x-3 sm:space-x-4">
@@ -642,12 +676,21 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+        </>
+      )}
 
       <StravaConnectModal
         isOpen={isStravaModalOpen}
         onClose={() => setIsStravaModalOpen(false)}
         onSuccess={loadData}
         initialError={oauthError}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        currentUser={getCurrentUser()}
+        onUserChanged={() => loadData()}
       />
     </div>
   );

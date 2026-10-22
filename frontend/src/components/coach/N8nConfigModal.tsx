@@ -16,11 +16,18 @@ export default function N8nConfigModal({ isOpen, onClose, onSaved }: N8nConfigMo
 
   useEffect(() => {
     if (isOpen) {
+      if (typeof window !== "undefined") {
+        const local = localStorage.getItem("freeride_n8n_webhook");
+        if (local) setWebhookUrl(local);
+      }
       fetch("/api/v1/settings")
         .then(res => res.json())
         .then(data => {
           if (data.n8n_webhook_url) {
             setWebhookUrl(data.n8n_webhook_url);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("freeride_n8n_webhook", data.n8n_webhook_url);
+            }
           }
         })
         .catch(console.error);
@@ -32,11 +39,19 @@ export default function N8nConfigModal({ isOpen, onClose, onSaved }: N8nConfigMo
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    const cleanUrl = webhookUrl.trim();
     try {
+      if (typeof window !== "undefined") {
+        if (cleanUrl) {
+          localStorage.setItem("freeride_n8n_webhook", cleanUrl);
+        } else {
+          localStorage.removeItem("freeride_n8n_webhook");
+        }
+      }
       await fetch("/api/v1/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ n8n_webhook_url: webhookUrl })
+        body: JSON.stringify({ n8n_webhook_url: cleanUrl })
       });
       setSuccess(true);
       setTimeout(() => {
