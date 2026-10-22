@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { CoachResponse, RiderFitnessMetrics } from "@/lib/n8n_coach";
-import { getStravaAuthHeaders } from "@/lib/api";
+import { getStravaAuthHeaders, getStravaCacheKey } from "@/lib/api";
+import { getCurrentUser } from "@/lib/auth";
 import {
   BrainCircuit,
   Calendar,
@@ -35,7 +36,10 @@ export default function CoachPage() {
   const getCachedClientActivities = () => {
     if (typeof window === "undefined") return [];
     try {
-      const raw = localStorage.getItem("freeride_strava_activities_v4");
+      const user = getCurrentUser();
+      const isOwner = !user || user.id === "principal" || user.email === "principal@freeride.app";
+      const key = getStravaCacheKey();
+      const raw = localStorage.getItem(key) || (isOwner ? localStorage.getItem("freeride_strava_activities_v4") : null);
       return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
@@ -70,8 +74,14 @@ export default function CoachPage() {
     }
   };
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
+  const initRiderMetrics = () => {
+    if (typeof window === "undefined") return;
+    const user = getCurrentUser();
+    if (user?.onboardingCompleted) {
+      if (user.weightKg) setRiderWeightKg(String(user.weightKg));
+      if (user.knownFtp) setTest20MinWatts(String(user.knownFtp));
+      if (user.knownMaxHr) setTest20MinHr(String(Math.round(user.knownMaxHr * 0.935)));
+    } else {
       const savedW = localStorage.getItem("freeride_ftp_20m_w");
       const savedHr = localStorage.getItem("freeride_ftp_20m_hr");
       const savedKg = localStorage.getItem("freeride_rider_kg");
@@ -79,7 +89,20 @@ export default function CoachPage() {
       if (savedHr) setTest20MinHr(savedHr);
       if (savedKg) setRiderWeightKg(savedKg);
     }
+  };
+
+  useEffect(() => {
+    initRiderMetrics();
     loadCoachData();
+
+    const handleAuthChange = () => {
+      initRiderMetrics();
+      loadCoachData();
+    };
+    window.addEventListener("auth-changed", handleAuthChange);
+    return () => {
+      window.removeEventListener("auth-changed", handleAuthChange);
+    };
   }, []);
 
   const submitCoachPrompt = async (promptText: string) => {

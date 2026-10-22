@@ -1,7 +1,12 @@
 import { ActivitySummary, ActivityDetail, AIInsight } from "@/types/telemetry";
+import { getCurrentUser, getUserStorageKey, saveUser } from "./auth";
 
 const API_BASE = "/api/v1";
-const STRAVA_CACHE_KEY = "freeride_strava_activities_v4";
+
+export function getStravaCacheKey(): string {
+  const user = getCurrentUser();
+  return user ? `freeride_strava_activities_${user.id}` : "freeride_strava_activities_v4";
+}
 
 export function purgeLegacyGarminCache() {
   if (typeof window === "undefined") return;
@@ -15,9 +20,17 @@ export function purgeLegacyGarminCache() {
 export function getStravaAuthHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
   try {
-    const auth = localStorage.getItem("freeride_strava_auth");
+    const user = getCurrentUser();
+    const isOwner = !user || user.id === "principal" || user.email === "principal@freeride.app";
+    const auth =
+      user?.stravaAuth ||
+      localStorage.getItem(getUserStorageKey("freeride_strava_auth")) ||
+      (isOwner ? localStorage.getItem("freeride_strava_auth") : null);
     if (auth) {
-      return { "x-strava-auth": auth };
+      return { 
+        "x-strava-auth": auth,
+        ...(user?.id ? { "x-user-id": user.id } : {})
+      };
     }
   } catch {}
   return {};
@@ -27,11 +40,25 @@ export function saveStravaAuthClient(encodedAuth?: string, athleteName?: string)
   if (typeof window === "undefined") return;
   try {
     purgeLegacyGarminCache();
+    const user = getCurrentUser();
+    const isOwner = !user || user.id === "principal" || user.email === "principal@freeride.app";
+
     if (encodedAuth) {
-      localStorage.setItem("freeride_strava_auth", encodedAuth);
+      localStorage.setItem(getUserStorageKey("freeride_strava_auth"), encodedAuth);
+      if (isOwner) {
+        localStorage.setItem("freeride_strava_auth", encodedAuth);
+      }
     }
     if (athleteName) {
-      localStorage.setItem("freeride_strava_athlete", athleteName);
+      localStorage.setItem(getUserStorageKey("freeride_strava_athlete"), athleteName);
+      if (isOwner) {
+        localStorage.setItem("freeride_strava_athlete", athleteName);
+      }
+    }
+    if (user) {
+      user.stravaAuth = encodedAuth || user.stravaAuth;
+      user.stravaAthleteName = athleteName || user.stravaAthleteName;
+      saveUser(user);
     }
   } catch {}
 }
@@ -39,14 +66,32 @@ export function saveStravaAuthClient(encodedAuth?: string, athleteName?: string)
 export function clearStravaAuthClient() {
   if (typeof window === "undefined") return;
   try {
-    localStorage.removeItem("freeride_strava_auth");
-    localStorage.removeItem("freeride_strava_athlete");
-    localStorage.removeItem(STRAVA_CACHE_KEY);
+    const user = getCurrentUser();
+    const isOwner = !user || user.id === "principal" || user.email === "principal@freeride.app";
+
+    localStorage.removeItem(getUserStorageKey("freeride_strava_auth"));
+    localStorage.removeItem(getUserStorageKey("freeride_strava_athlete"));
+    localStorage.removeItem(getStravaCacheKey());
+
+    if (isOwner) {
+      localStorage.removeItem("freeride_strava_auth");
+      localStorage.removeItem("freeride_strava_athlete");
+    }
+
+    if (user) {
+      delete user.stravaAuth;
+      delete user.stravaAthleteName;
+      delete user.stravaAthleteId;
+      saveUser(user);
+    }
   } catch {}
 }
 
 export async function fetchActivities(): Promise<ActivitySummary[]> {
   purgeLegacyGarminCache();
+  const cacheKey = getStravaCacheKey();
+  const user = getCurrentUser();
+  const isOwner = !user || user.id === "principal" || user.email === "principal@freeride.app";
 
   try {
     const res = await fetch(`${API_BASE}/activities`, {
@@ -57,10 +102,10 @@ export async function fetchActivities(): Promise<ActivitySummary[]> {
     });
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         if (typeof window !== "undefined") {
           try {
-            localStorage.setItem(STRAVA_CACHE_KEY, JSON.stringify(data));
+            localStorage.setItem(cacheKey, JSON.stringify(data));
           } catch {}
         }
         return data;
@@ -72,10 +117,12 @@ export async function fetchActivities(): Promise<ActivitySummary[]> {
 
   if (typeof window !== "undefined") {
     try {
-      const cached = localStorage.getItem(STRAVA_CACHE_KEY);
+      const cached =
+        localStorage.getItem(cacheKey) ||
+        (isOwner ? localStorage.getItem("freeride_strava_activities_v4") : null);
       if (cached) {
         const list = JSON.parse(cached);
-        if (Array.isArray(list) && list.length > 0) return list;
+        if (Array.isArray(list)) return list;
       }
     } catch {}
   }
@@ -120,7 +167,11 @@ export async function fetchActivityDetail(id: string): Promise<ActivityDetail | 
 
   if (typeof window !== "undefined") {
     try {
-      const cached = localStorage.getItem(STRAVA_CACHE_KEY);
+      const user = getCurrentUser();
+      const isOwner = !user || user.id === "principal" || user.email === "principal@freeride.app";
+      const cached =
+        localStorage.getItem(getStravaCacheKey()) ||
+        (isOwner ? localStorage.getItem("freeride_strava_activities_v4") : null);
       if (cached) {
         const list = JSON.parse(cached);
         if (Array.isArray(list)) {
@@ -199,12 +250,13 @@ export async function deleteActivity(id: string): Promise<boolean> {
   if (typeof window !== "undefined") {
     try {
       localStorage.removeItem(`freeride_strava_detail_${id}`);
-      const cached = localStorage.getItem(STRAVA_CACHE_KEY);
+      const key = getStravaCacheKey();
+      const cached = localStorage.getItem(key);
       if (cached) {
         const list = JSON.parse(cached);
         if (Array.isArray(list)) {
           const filtered = list.filter((a: any) => String(a.id) !== String(id));
-          localStorage.setItem(STRAVA_CACHE_KEY, JSON.stringify(filtered));
+          localStorage.setItem(key, JSON.stringify(filtered));
         }
       }
     } catch {}

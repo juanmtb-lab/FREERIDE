@@ -1,0 +1,101 @@
+{
+  "name": "FREERIDE - AI Cycling Coach (4 dias - Sabado Fondo)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "freeride-coach",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook FREERIDE",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "freeride-coach"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Pregunta o Evento: {{ $json.body.user_query || $json.body.event }}\n\nMétricas Fisiológicas del Atleta:\n- CTL (Fitness): {{ $json.body.rider_metrics.ctl }}\n- ATL (Fatiga): {{ $json.body.rider_metrics.atl }}\n- TSB (Forma): {{ $json.body.rider_metrics.tsb }} ({{ $json.body.rider_metrics.formStatus }})\n- FC Máxima Real: {{ $json.body.rider_metrics.maxObservedHr || 183 }} bpm\n- FC Media Histórica: {{ $json.body.rider_metrics.avgHrLastRides || 139 }} bpm\n- Disciplina: {{ $json.body.rider_metrics.dominantDiscipline || '96% Carretera' }}\n- Distancia Media: {{ $json.body.rider_metrics.avgDistanceKm || 34.8 }} km (Récord: {{ $json.body.rider_metrics.maxDistanceKm || 100.5 }} km)\n\nÚltimas actividades de Strava recibidas: {{ JSON.stringify($json.body.recent_activities?.slice(0, 5)) }}",
+        "options": {
+          "systemMessage": "=Eres el Entrenador Personal de Ciclismo de FREERIDE.\n\nPERFIL DEL CICLISTA:\n- Entrena 4 DÍAS A LA SEMANA.\n- Estructura fija recomendada:\n  * Lunes: Descanso total.\n  * Martes: Rodaje Base Aeróbica Z2 (75 min a 114-134 bpm).\n  * Miércoles o Jueves: Series de Umbral Z4 o subida (3x10 min a 150-166 bpm).\n  * Viernes: Descanso total previo al fin de semana.\n  * SÁBADO (SALIDA REINA / DÍA PRINCIPAL): Fondo largo exigente (150-200 min, puertos a ritmo constante Z2-Z3).\n  * Domingo: Rodaje suave de recuperación activa (60 min en Z1 <115 bpm) o descanso.\n- FC Máxima real: 183 bpm.\n\nREGLAS DE RESPUESTA:\n1. Responde SIEMPRE en español de forma ULTRA CONCISA (máximo 4 a 5 líneas con viñetas).\n2. Cero párrafos introductorios o texto de relleno.\n3. Da duraciones exactas en minutos, zonas con bpm reales y objetivo claro.\n4. Si te piden plan semanal, respeta los 4 días de entreno con sábado de fondo.\n\nFORMATO OBLIGATORIO JSON DE SALIDA:\nDebes responder únicamente con un objeto JSON válido con esta estructura:\n{\n  \"title\": \"Título corto del consejo o plan\",\n  \"content_es\": \"Texto en viñetas corto (máximo 4 líneas)\",\n  \"weekly_plan\": [\n    {\"day\": \"Lunes\", \"title\": \"Descanso Total\", \"description\": \"Recuperación activa o descanso total.\", \"target_hr_zone\": \"Descanso\", \"duration_min\": 0, \"intensity\": \"Descanso\"},\n    {\"day\": \"Martes\", \"title\": \"Base Aeróbica Z2\", \"description\": \"Rodaje continuo a 88-92 rpm sin pasar de 134 bpm.\", \"target_hr_zone\": \"Z2 (114-134 bpm)\", \"duration_min\": 75, \"intensity\": \"Media\"},\n    {\"day\": \"Miércoles\", \"title\": \"Series Umbral Z4\", \"description\": \"Calentamiento + 3x10 min subida a 150-165 bpm.\", \"target_hr_zone\": \"Z4 (150-166 bpm)\", \"duration_min\": 75, \"intensity\": \"Alta\"},\n    {\"day\": \"Jueves\", \"title\": \"Descanso / Movilidad\", \"description\": \"Descanso neuromuscular.\", \"target_hr_zone\": \"Descanso\", \"duration_min\": 0, \"intensity\": \"Descanso\"},\n    {\"day\": \"Viernes\", \"title\": \"Descanso Previo\", \"description\": \"Hidratación previa al fondo del sábado.\", \"target_hr_zone\": \"Descanso\", \"duration_min\": 0, \"intensity\": \"Descanso\"},\n    {\"day\": \"Sábado\", \"title\": \"Fondo Carretera (Salida Reina)\", \"description\": \"Salida larga progresiva en Z2-Z3 con puertos a ritmo.\", \"target_hr_zone\": \"Z2-Z3 (120-148 bpm)\", \"duration_min\": 180, \"intensity\": \"Alta\"},\n    {\"day\": \"Domingo\", \"title\": \"Rodaje Suave Regenerativo\", \"description\": \"Soltar piernas en llano sin pasar de 115 bpm.\", \"target_hr_zone\": \"Z1 (<115 bpm)\", \"duration_min\": 60, \"intensity\": \"Baja\"}\n  ]\n}"
+        }
+      },
+      "id": "ai-agent",
+      "name": "AI Cycling Coach Model",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "openai-model",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [480, 480],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai_cred_placeholder",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let raw = $input.first().json.output || $input.first().json.text || $input.first().json.message?.content || '{}';\n\ntry {\n  if (typeof raw === 'string') {\n    const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();\n    const parsed = JSON.parse(cleaned);\n    return [ { json: parsed } ];\n  } else {\n    return [ { json: raw } ];\n  }\n} catch (e) {\n  return [ {\n    json: {\n      title: \"Consejo del Entrenador AI\",\n      content_es: String(raw),\n      source: \"N8N_WORKFLOW\"\n    }\n  } ];\n}"
+      },
+      "id": "json-parser",
+      "name": "Format JSON for FREERIDE",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 300]
+    }
+  ],
+  "connections": {
+    "Webhook FREERIDE": {
+      "main": [
+        [
+          {
+            "node": "AI Cycling Coach Model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Cycling Coach Model",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Cycling Coach Model": {
+      "main": [
+        [
+          {
+            "node": "Format JSON for FREERIDE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -2,29 +2,60 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bike, UploadCloud, RefreshCw, LogOut, CheckCircle2, BrainCircuit } from "lucide-react";
+import { Bike, UploadCloud, RefreshCw, LogOut, CheckCircle2, BrainCircuit, User } from "lucide-react";
 import StravaConnectModal from "@/components/strava/StravaConnectModal";
+import AuthModal from "@/components/auth/AuthModal";
+import OnboardingModal from "@/components/auth/OnboardingModal";
+import { UserProfile } from "@/types/auth";
+import { getCurrentUser, registerUser } from "@/lib/auth";
 import {
   getStravaAuthHeaders,
   saveStravaAuthClient,
   clearStravaAuthClient,
-  purgeLegacyGarminCache
+  purgeLegacyGarminCache,
+  getStravaCacheKey
 } from "@/lib/api";
 
 export default function Navbar() {
   const [isStravaModalOpen, setIsStravaModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<{ connected: boolean; athleteName?: string } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
-  const checkSession = async () => {
+  const initAuthAndSession = async () => {
     purgeLegacyGarminCache();
 
-    if (typeof window !== "undefined") {
+    let user = getCurrentUser();
+    // Auto-create initial default user if first time visiting
+    if (!user && typeof window !== "undefined") {
+      const cachedAthlete = localStorage.getItem("freeride_strava_athlete");
+      user = registerUser(cachedAthlete || "Mi Usuario", "principal@freeride.app");
+      // If Strava was already connected, bind it to this initial user
+      const existingAuth = localStorage.getItem("freeride_strava_auth");
+      if (existingAuth) {
+        user.stravaAuth = existingAuth;
+        user.stravaAthleteName = cachedAthlete || "Atleta Strava";
+        user.onboardingCompleted = true; // existing user already has history
+      }
+    }
+    setCurrentUser(user);
+
+    if (user && !user.onboardingCompleted) {
+      setIsOnboardingOpen(true);
+    }
+
+    if (user?.stravaAthleteName || user?.stravaAuth) {
+      setSession({ connected: true, athleteName: user.stravaAthleteName || "Atleta Strava" });
+    } else if (typeof window !== "undefined") {
       const cachedAthlete = localStorage.getItem("freeride_strava_athlete");
       const cachedAuth = localStorage.getItem("freeride_strava_auth");
       if (cachedAuth) {
         setSession({ connected: true, athleteName: cachedAthlete || "Atleta Strava" });
+      } else {
+        setSession({ connected: false });
       }
     }
 
@@ -48,10 +79,18 @@ export default function Navbar() {
   };
 
   useEffect(() => {
-    checkSession();
-    const handleSynced = () => checkSession();
+    initAuthAndSession();
+    const handleSynced = () => initAuthAndSession();
+    const handleAuthChanged = () => {
+      initAuthAndSession();
+      window.location.reload();
+    };
     window.addEventListener("strava-synced", handleSynced);
-    return () => window.removeEventListener("strava-synced", handleSynced);
+    window.addEventListener("auth-changed", handleAuthChanged);
+    return () => {
+      window.removeEventListener("strava-synced", handleSynced);
+      window.removeEventListener("auth-changed", handleAuthChanged);
+    };
   }, []);
 
   const handleQuickRefresh = async () => {
@@ -75,7 +114,7 @@ export default function Navbar() {
       }
       if (data.activities && Array.isArray(data.activities)) {
         try {
-          localStorage.setItem("freeride_strava_activities_v4", JSON.stringify(data.activities));
+          localStorage.setItem(getStravaCacheKey(), JSON.stringify(data.activities));
         } catch {}
       }
       setSyncMessage(`¡Strava Sincronizado! (${data.synced_count || 0} rutas)`);
@@ -90,7 +129,7 @@ export default function Navbar() {
   };
 
   const handleLogoutStrava = async () => {
-    if (confirm("¿Desconectar tu cuenta de Strava?")) {
+    if (confirm("¿Desconectar la cuenta de Strava de este usuario?")) {
       await fetch("/api/v1/strava/session", { method: "DELETE" });
       clearStravaAuthClient();
       setSession({ connected: false });
@@ -123,8 +162,22 @@ export default function Navbar() {
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-1"></span>
         </Link>
 
-        {/* User Status & Quick Actions */}
+        {/* User Switcher & Strava Actions */}
         <div className="flex items-center space-x-2 sm:space-x-3">
+          {/* User Profile Selector Pill */}
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className="flex items-center space-x-1.5 bg-dark-bg hover:bg-dark-border/80 border border-dark-border px-2.5 py-1.5 rounded-xl transition text-xs font-semibold text-white group"
+            title="Cambiar de usuario o invitar a un amigo"
+          >
+            <div className="w-5 h-5 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <User className="w-3.5 h-3.5" />
+            </div>
+            <span className="max-w-[90px] sm:max-w-[120px] truncate">
+              {currentUser?.name || "Usuario"}
+            </span>
+          </button>
+
           {session?.connected ? (
             <div className="flex items-center space-x-1.5 sm:space-x-2 bg-dark-bg/80 border border-orange-500/40 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl">
               <span className="flex items-center space-x-1.5 text-[11px] sm:text-xs text-orange-400 font-semibold">
@@ -132,7 +185,7 @@ export default function Navbar() {
                   S
                 </span>
                 <span className="hidden sm:inline">Strava:</span>
-                <span className="text-white max-w-[110px] sm:max-w-[150px] truncate">
+                <span className="text-white max-w-[90px] sm:max-w-[130px] truncate">
                   {session.athleteName || "Conectado"}
                 </span>
               </span>
@@ -148,7 +201,7 @@ export default function Navbar() {
 
               <button
                 onClick={handleLogoutStrava}
-                title="Desconectar Strava"
+                title="Desconectar Strava de este usuario"
                 className="p-1 text-dark-muted hover:text-rose-400 rounded-lg transition ml-0.5"
               >
                 <LogOut className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -181,11 +234,37 @@ export default function Navbar() {
         </div>
       )}
 
+      {/* Auth & Multi-User Switcher Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        currentUser={currentUser}
+        onUserChanged={(newUser) => {
+          setCurrentUser(newUser);
+          if (newUser && !newUser.onboardingCompleted) {
+            setIsOnboardingOpen(true);
+          }
+        }}
+      />
+
+      {/* Onboarding Questionnaire Modal */}
+      {currentUser && (
+        <OnboardingModal
+          user={currentUser}
+          isOpen={isOnboardingOpen}
+          onCompleted={() => {
+            setIsOnboardingOpen(false);
+            initAuthAndSession();
+            setIsStravaModalOpen(true); // Guide friend to connect their Strava right after questionnaire!
+          }}
+        />
+      )}
+
       <StravaConnectModal
         isOpen={isStravaModalOpen}
         onClose={() => setIsStravaModalOpen(false)}
         onSuccess={() => {
-          checkSession();
+          initAuthAndSession();
           window.location.reload();
         }}
       />
