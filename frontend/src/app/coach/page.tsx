@@ -5,6 +5,7 @@ import { CoachResponse, RiderFitnessMetrics } from "@/lib/n8n_coach";
 import { getStravaAuthHeaders, getStravaCacheKey } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
 import CoachMessageRenderer from "@/components/coach/CoachMessageRenderer";
+import N8nConfigModal from "@/components/coach/N8nConfigModal";
 import {
   BrainCircuit,
   Calendar,
@@ -15,12 +16,14 @@ import {
   Send,
   Flame,
   Activity,
-  Sparkles
+  Sparkles,
+  Settings
 } from "lucide-react";
 
 export default function CoachPage() {
   const [coachData, setCoachData] = useState<CoachResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isN8nModalOpen, setIsN8nModalOpen] = useState(false);
 
   const [userQuery, setUserQuery] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
@@ -320,14 +323,23 @@ export default function CoachPage() {
             </div>
           </div>
 
-          <button
-            onClick={loadCoachData}
-            disabled={loading}
-            className="p-2 text-dark-muted hover:text-white bg-dark-bg rounded-xl border border-dark-border transition"
-            title="Recargar diagnóstico"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-purple-400" : ""}`} />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setIsN8nModalOpen(true)}
+              className="p-2 text-dark-muted hover:text-purple-400 bg-dark-bg rounded-xl border border-dark-border transition"
+              title="Vincular o verificar Webhook de N8N"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            <button
+              onClick={loadCoachData}
+              disabled={loading}
+              className="p-2 text-dark-muted hover:text-white bg-dark-bg rounded-xl border border-dark-border transition"
+              title="Recargar diagnóstico"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-purple-400" : ""}`} />
+            </button>
+          </div>
         </div>
 
         {/* Quick Action Prompt Chips */}
@@ -622,6 +634,15 @@ export default function CoachPage() {
           ))}
         </div>
       </div>
+
+      {/* N8N Webhook Connection Modal */}
+      <N8nConfigModal
+        isOpen={isN8nModalOpen}
+        onClose={() => setIsN8nModalOpen(false)}
+        onSaved={() => {
+          loadCoachData();
+        }}
+      />
     </div>
   );
 }

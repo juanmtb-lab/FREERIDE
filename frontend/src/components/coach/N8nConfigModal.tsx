@@ -77,37 +77,37 @@ export default function N8nConfigModal({ isOpen, onClose, onSaved }: N8nConfigMo
         </button>
 
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-orange-500/20 text-orange-400 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
             <Workflow className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">Motor N8N del Entrenador AI</h2>
-            <p className="text-xs text-dark-muted">Conecta tu propio Workflow de N8N para procesar entrenamientos</p>
+            <h2 className="text-xl font-bold text-white">Conexión con tu Robot N8N</h2>
+            <p className="text-xs text-dark-muted">Conecta el Webhook oficial de N8N para procesar entrenamientos reales con IA</p>
           </div>
         </div>
 
         <form onSubmit={handleSave} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-dark-muted mb-1.5 flex items-center space-x-1.5">
-              <Link2 className="w-3.5 h-3.5 text-orange-400" />
-              <span>URL del Webhook de N8N</span>
+              <Link2 className="w-3.5 h-3.5 text-purple-400" />
+              <span>URL del Webhook de Producción de N8N</span>
             </label>
             <input
               type="url"
-              placeholder="https://n8n.tu-dominio.com/webhook/freeride-coach"
+              placeholder="https://tu-n8n.com/webhook/freeride-coach"
               value={webhookUrl}
               onChange={(e) => setWebhookUrl(e.target.value)}
-              className="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-dark-muted focus:outline-none focus:border-orange-500"
+              className="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-dark-muted focus:outline-none focus:border-purple-500"
             />
             <p className="text-[11px] text-dark-muted mt-1.5 leading-normal">
-              FREERIDE enviará tu perfil fisiológico (CTL, ATL, TSB, pulsaciones bpm y datos de rutas) a este Webhook de N8N para que tu Workflow responda con análisis y planes adaptativos.
+              FREERIDE enviará tus preguntas y tu perfil fisiológico a esta URL para que tu modelo de lenguaje en N8N genere el entrenamiento exacto.
             </p>
           </div>
 
           {success && (
             <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center space-x-2 text-emerald-400 text-xs">
               <CheckCircle2 className="w-4 h-4" />
-              <span>¡URL de N8N guardada correctamente!</span>
+              <span>¡URL de N8N vinculada con éxito!</span>
             </div>
           )}
 
@@ -123,10 +123,10 @@ export default function N8nConfigModal({ isOpen, onClose, onSaved }: N8nConfigMo
             <button
               type="submit"
               disabled={saving}
-              className="px-5 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-orange-600/20 flex items-center space-x-2 disabled:opacity-50"
+              className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-purple-600/20 flex items-center space-x-2 disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
-              <span>{saving ? "Guardando..." : "Guardar Webhook N8N"}</span>
+              <span>{saving ? "Guardando..." : "Guardar y Conectar N8N"}</span>
             </button>
           </div>
         </form>

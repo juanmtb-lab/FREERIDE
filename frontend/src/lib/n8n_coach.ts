@@ -374,8 +374,12 @@ export async function queryAiCoach(
   const headerWebhook = options?.request?.headers?.get('x-n8n-webhook-url');
   const webhookUrl = options?.webhookUrlOverride || headerWebhook || settings.n8n_webhook_url || process.env.N8N_WORKFLOW_WEBHOOK_URL;
 
+  console.log(`[FREERIDE COACH] Webhook status:`, webhookUrl ? `Configured -> ${webhookUrl}` : 'NOT_CONFIGURED (Offline fallback)');
+
   if (webhookUrl && webhookUrl.startsWith('http')) {
     try {
+      console.log(`[FREERIDE COACH] Sending prompt to N8N Webhook:`, webhookUrl);
+      const startTime = Date.now();
       const athletePrompt = userQuery || 'Prescribe el entrenamiento recomendado según mi perfil y estado de forma actual';
       const payload = {
         event: 'COACH_ANALYSIS_REQUEST',
@@ -414,6 +418,8 @@ export async function queryAiCoach(
         body: JSON.stringify(payload)
       });
 
+      console.log(`[FREERIDE COACH] N8N responded with status ${res.status} in ${Date.now() - startTime}ms`);
+
       if (res.ok) {
         const n8nData = await res.json();
         return {
@@ -424,9 +430,11 @@ export async function queryAiCoach(
           weekly_plan: n8nData.weekly_plan || n8nnWeeklyPlanFallback(metrics),
           created_at: new Date().toISOString()
         };
+      } else {
+        console.warn(`[FREERIDE COACH] N8N returned error status: ${res.status}`);
       }
     } catch (err) {
-      console.error('N8N Webhook call failed, falling back to internal AI engine:', err);
+      console.error('[FREERIDE COACH] Error calling N8N Webhook, falling back to internal engine:', err);
     }
   }
 
@@ -453,6 +461,24 @@ export async function queryAiCoach(
   const baseElev = metrics.avgElevationM || 450;
 
   if (
+    isQuestion &&
+    (qLower.includes('semanal') ||
+      qLower.includes('semana') ||
+      qLower.includes('4 d') ||
+      qLower.includes('distribu') ||
+      qLower.includes('microciclo') ||
+      qLower.includes('plato fuerte'))
+  ) {
+    sessionTitle = 'Planificación Semanal Polarizada (4 Días · Sábado Fondo)';
+    contentEs = `• 📊 **Diagnóstico Fisiológico:** Fitness CTL: ${metrics.ctl} | Fatiga ATL: ${metrics.atl} | Balance TSB: ${metrics.tsb > 0 ? `+${metrics.tsb}` : metrics.tsb} (${metrics.formStatus}).
+• ⏱️ **Volumen Total Semanal:** **~7 horas distribuidas en 4 sesiones clave** (3 días de descanso y asimilación).
+• 📋 **Distribución y Estructura de los 4 Días:**
+  1. *🟢 Martes - Base Aeróbica Z2 (75 min):* Rodaje continuo en llano a 88-92 rpm. Pulsaciones clavadas en **${z2Low}-${z2High} bpm** (techo 134 bpm).
+  2. *🟣 Jueves - Calidad & Umbral Z4 (70 min):* Calentamiento 15m + **3 × 10 min en Z4 (${z4Low}-${z4High} bpm)** con 4 min de recuperación en Z1 + 15m soltar piernas.
+  3. *🚀 Sábado - Plato Fuerte / Fondo Reina (3h 30m - 4h):* Salida larga de **80-105 km (+1.000m)** en Z2-Z3 (${z2Low}-${z3High} bpm) con puertos a ritmo y nutrición de 60g carbohidratos/hora.
+  4. *🔵 Domingo - Regenerativo Activo (50 min):* Soltar piernas en llano sin esfuerzo a <${z1High} bpm para eliminar lactato y recuperar fibras.
+• 💤 **Días de Descanso Total:** Lunes, Miércoles y Viernes (priorizar hidratación y sueño profundo antes del fondo).`;
+  } else if (
     isQuestion &&
     (qLower.includes('relaj') ||
       qLower.includes('recuper') ||
