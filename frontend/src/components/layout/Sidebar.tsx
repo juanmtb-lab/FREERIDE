@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bike, Activity, UploadCloud, BrainCircuit } from "lucide-react";
+import { Activity, UploadCloud, BrainCircuit } from "lucide-react";
+import FreerideLogo from "@/components/layout/FreerideLogo";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -20,9 +21,7 @@ export default function Sidebar() {
           href="/"
           className="p-6 flex items-center space-x-3 border-b border-dark-border hover:opacity-90 transition cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform">
-            <Bike className="w-6 h-6 text-white" />
-          </div>
+          <FreerideLogo size="md" className="group-hover:scale-105 transition-transform" />
           <div>
             <h1 className="font-bold text-xl tracking-wider text-white group-hover:text-purple-400 transition-colors">
               FREERIDE

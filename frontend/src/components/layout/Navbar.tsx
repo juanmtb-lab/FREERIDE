@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bike, UploadCloud, RefreshCw, LogOut, CheckCircle2, BrainCircuit, User } from "lucide-react";
+import { UploadCloud, RefreshCw, LogOut, CheckCircle2, BrainCircuit, User } from "lucide-react";
+import FreerideLogo from "@/components/layout/FreerideLogo";
 import StravaConnectModal from "@/components/strava/StravaConnectModal";
 import AuthModal from "@/components/auth/AuthModal";
 import OnboardingModal from "@/components/auth/OnboardingModal";
@@ -127,10 +128,8 @@ export default function Navbar() {
     <>
       <header className="h-14 sm:h-16 bg-dark-card/95 backdrop-blur-md border-b border-dark-border px-4 sm:px-6 flex items-center justify-between shrink-0 z-30">
         {/* Mobile Brand Link */}
-        <Link href="/" className="flex items-center space-x-2 md:hidden hover:opacity-90 transition cursor-pointer group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-md shadow-purple-500/20">
-            <Bike className="w-5 h-5 text-white" />
-          </div>
+        <Link href="/" className="flex items-center space-x-2.5 md:hidden hover:opacity-90 transition cursor-pointer group">
+          <FreerideLogo size="sm" className="group-hover:scale-105 transition-transform" />
           <span className="font-bold text-base text-white tracking-wider group-hover:text-purple-400 transition-colors">
             FREERIDE
           </span>

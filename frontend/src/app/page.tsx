@@ -25,7 +25,8 @@ import {
   AlertCircle,
   Heart,
   Zap,
-  Sparkles
+  Sparkles,
+  Compass
 } from "lucide-react";
 import StravaConnectModal from "@/components/strava/StravaConnectModal";
 import AuthModal from "@/components/auth/AuthModal";
@@ -378,8 +379,9 @@ export default function Dashboard() {
         <>
       {/* Metric Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-        <div className="glass-panel p-4 sm:p-5 rounded-2xl flex items-center space-x-3 sm:space-x-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+        {/* Distancia Total - Indigo / Violet */}
+        <div className="glass-panel p-4 sm:p-5 rounded-2xl flex items-center space-x-3 sm:space-x-4 border border-indigo-500/20 hover:border-indigo-500/40 transition">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0 shadow-sm shadow-indigo-500/10">
             <Bike className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
@@ -388,8 +390,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="glass-panel p-4 sm:p-5 rounded-2xl flex items-center space-x-3 sm:space-x-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+        {/* Desnivel Positivo - Emerald / Mint */}
+        <div className="glass-panel p-4 sm:p-5 rounded-2xl flex items-center space-x-3 sm:space-x-4 border border-emerald-500/20 hover:border-emerald-500/40 transition">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-600/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-sm shadow-emerald-500/10">
             <Mountain className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
@@ -398,8 +401,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="glass-panel p-4 sm:p-5 rounded-2xl flex items-center space-x-3 sm:space-x-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+        {/* Tiempo Entrenado - Warm Amber / Solar */}
+        <div className="glass-panel p-4 sm:p-5 rounded-2xl flex items-center space-x-3 sm:space-x-4 border border-amber-500/20 hover:border-amber-500/40 transition">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-sm shadow-amber-500/10">
             <Gauge className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
@@ -408,14 +412,15 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="glass-panel p-4 sm:p-5 rounded-2xl flex items-center space-x-3 sm:space-x-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+        {/* Entrenamientos - Electric Fuchsia / Magenta */}
+        <div className="glass-panel p-4 sm:p-5 rounded-2xl flex items-center space-x-3 sm:space-x-4 border border-fuchsia-500/20 hover:border-fuchsia-500/40 transition">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-fuchsia-500/20 to-pink-600/20 text-fuchsia-400 border border-fuchsia-500/30 flex items-center justify-center shrink-0 shadow-sm shadow-fuchsia-500/10">
             <Flame className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
             <p className="text-[11px] sm:text-xs text-dark-muted font-medium">Entrenamientos</p>
             <p className="text-base sm:text-2xl font-bold text-white">
-              <span className="text-emerald-400">{mtbCount} MTB</span> / <span className="text-blue-400">{roadCount} Rd</span>
+              <span className="text-emerald-400">{mtbCount} MTB</span> / <span className="text-indigo-400">{roadCount} Rd</span>
             </p>
           </div>
         </div>
@@ -423,18 +428,21 @@ export default function Dashboard() {
 
       {/* Historical Rider Training Profile & AI Recommendation Banner */}
       {activities.length > 0 && (
-        <div className="glass-panel p-5 sm:p-6 rounded-3xl border border-purple-500/30 bg-gradient-to-br from-dark-card via-dark-card to-purple-950/20 space-y-5">
+        <div className="glass-panel p-5 sm:p-6 rounded-3xl border border-purple-500/30 bg-gradient-to-br from-dark-card via-dark-card to-purple-950/25 space-y-5 shadow-xl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5" />
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 via-violet-600 to-fuchsia-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-purple-600/25">
+                <Sparkles className="w-6 h-6" />
               </div>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-base sm:text-lg font-extrabold text-white">
-                    Tu Perfil de Entrenamiento: <span className="text-purple-400">{riderProfileLabel}</span>
+                    Tu Perfil de Entrenamiento:{" "}
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-300 via-purple-300 to-fuchsia-300">
+                      {riderProfileLabel}
+                    </span>
                   </h2>
-                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300">
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">
                     {totalCount} salidas analizadas en Strava
                   </span>
                 </div>
@@ -446,57 +454,71 @@ export default function Dashboard() {
 
             <Link
               href="/coach"
-              className="self-start sm:self-auto inline-flex items-center space-x-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold px-4 py-2.5 rounded-xl transition shadow-lg shadow-purple-600/20"
+              className="self-start sm:self-auto inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-extrabold px-4 py-2.5 rounded-xl transition shadow-lg shadow-purple-600/25"
             >
               <BrainCircuit className="w-4 h-4" />
               <span>Ver Plan Semanal Personalizado</span>
             </Link>
           </div>
 
+          {/* 4 Differentiated Sub-Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="p-3.5 rounded-2xl bg-dark-bg/70 border border-dark-border">
-              <p className="text-[10px] uppercase font-bold text-dark-muted">Media por Salida / Récord</p>
-              <p className="text-sm sm:text-base font-extrabold text-white mt-0.5">
-                {avgDistKm} km <span className="text-xs font-normal text-purple-400">(Máx: {maxDistKm} km)</span>
+            {/* 1. Distancia - Indigo */}
+            <div className="p-3.5 rounded-2xl bg-dark-bg/80 border border-indigo-500/25 hover:border-indigo-500/40 transition">
+              <p className="text-[10px] uppercase font-bold text-dark-muted flex items-center space-x-1">
+                <Compass className="w-3 h-3 text-indigo-400" />
+                <span>Media por Salida / Récord</span>
+              </p>
+              <p className="text-sm sm:text-base font-extrabold text-white mt-1">
+                {avgDistKm} km <span className="text-xs font-normal text-indigo-400">(Máx: {maxDistKm} km)</span>
               </p>
             </div>
-            <div className="p-3.5 rounded-2xl bg-dark-bg/70 border border-dark-border">
-              <p className="text-[10px] uppercase font-bold text-dark-muted">Exigencia Vertical</p>
-              <p className="text-sm sm:text-base font-extrabold text-white mt-0.5">
+
+            {/* 2. Desnivel - Emerald */}
+            <div className="p-3.5 rounded-2xl bg-dark-bg/80 border border-emerald-500/25 hover:border-emerald-500/40 transition">
+              <p className="text-[10px] uppercase font-bold text-dark-muted flex items-center space-x-1">
+                <Mountain className="w-3 h-3 text-emerald-400" />
+                <span>Exigencia Vertical</span>
+              </p>
+              <p className="text-sm sm:text-base font-extrabold text-white mt-1">
                 +{avgElevM} m/ruta <span className="text-xs font-normal text-emerald-400">({elevRatio} m/km)</span>
               </p>
             </div>
-            <div className="p-3.5 rounded-2xl bg-dark-bg/70 border border-dark-border">
+
+            {/* 3. Pulso - Rose */}
+            <div className="p-3.5 rounded-2xl bg-dark-bg/80 border border-rose-500/25 hover:border-rose-500/40 transition">
               <p className="text-[10px] uppercase font-bold text-dark-muted flex items-center space-x-1">
                 <Heart className="w-3 h-3 text-rose-400" />
                 <span>Pulso Medio / Máx Real</span>
               </p>
-              <p className="text-sm sm:text-base font-extrabold text-white mt-0.5">
+              <p className="text-sm sm:text-base font-extrabold text-white mt-1">
                 {avgHistoricalHr > 0 ? `${avgHistoricalHr} bpm` : "--"}{" "}
                 <span className="text-xs font-normal text-rose-400">
                   {maxHistoricalHr > 0 ? `(Máx: ${maxHistoricalHr} bpm)` : ""}
                 </span>
               </p>
             </div>
-            <div className="p-3.5 rounded-2xl bg-dark-bg/70 border border-dark-border">
+
+            {/* 4. Velocidad - Amber / Cyan */}
+            <div className="p-3.5 rounded-2xl bg-dark-bg/80 border border-cyan-500/25 hover:border-cyan-500/40 transition">
               <p className="text-[10px] uppercase font-bold text-dark-muted flex items-center space-x-1">
                 <Zap className="w-3 h-3 text-amber-400" />
                 <span>Velocidad & Terreno</span>
               </p>
-              <p className="text-sm sm:text-base font-extrabold text-white mt-0.5">
+              <p className="text-sm sm:text-base font-extrabold text-white mt-1">
                 {avgSpeedAll} km/h <span className="text-xs font-normal text-cyan-400">({mtbPct}% MTB)</span>
               </p>
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-dark-bg/85 border border-purple-500/20 text-xs text-gray-300 leading-relaxed space-y-1">
-            <p className="font-bold text-purple-400 flex items-center space-x-1.5 mb-1">
-              <BrainCircuit className="w-4 h-4" />
+          <div className="p-4 rounded-2xl bg-dark-bg/90 border border-purple-500/25 text-xs text-gray-300 leading-relaxed space-y-1">
+            <p className="font-bold text-fuchsia-400 flex items-center space-x-1.5 mb-1.5">
+              <BrainCircuit className="w-4 h-4 text-fuchsia-400" />
               <span>Pauta Directa según tu Historial:</span>
             </p>
             <p>• <strong className="text-white">Base Z2 (75% de tus salidas):</strong> Rodar entre <strong className="text-emerald-400">{z2Low}-{z2High} bpm</strong> (bajar de tu media de {avgHistoricalHr} bpm).</p>
             <p>• <strong className="text-white">Calidad Z4 (1 día/sem):</strong> 3×10 min en subida a <strong className="text-amber-400">{z4Low}-{z4High} bpm</strong> (rec: 5m suave).</p>
-            <p>• <strong className="text-white">Fondo Sábado:</strong> Objetivo <strong className="text-purple-400">{Math.round(Math.max(45, Number(avgDistKm) * 1.25))} km</strong> a 88-90 rpm.</p>
+            <p>• <strong className="text-white">Fondo Sábado:</strong> Objetivo <strong className="text-violet-400">{Math.round(Math.max(45, Number(avgDistKm) * 1.25))} km</strong> a 88-90 rpm.</p>
           </div>
         </div>
       )}
