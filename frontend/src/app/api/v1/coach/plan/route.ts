@@ -42,7 +42,12 @@ export async function POST(request: Request) {
       } catch {}
     }
     const query = body.query;
-    const coachResponse = await queryAiCoach(query, body.activities, { request, userId, webhookUrlOverride: body.webhook_url });
+    const coachResponse = await queryAiCoach(query, body.activities, {
+      request,
+      userId,
+      webhookUrlOverride: body.webhook_url,
+      userProfile: body.user_profile
+    });
     return NextResponse.json(coachResponse);
   } catch (error: any) {
     console.error('Error querying AI Coach:', error);

@@ -48,6 +48,7 @@ export default function CoachPage() {
     setLoading(true);
     try {
       const cachedActs = getCachedClientActivities();
+      const currentAthlete = getCurrentUser();
       const res = await fetch("/api/v1/coach/plan", {
         method: "POST",
         cache: "no-store",
@@ -55,7 +56,22 @@ export default function CoachPage() {
           "Content-Type": "application/json",
           ...getStravaAuthHeaders()
         },
-        body: JSON.stringify({ activities: cachedActs })
+        body: JSON.stringify({
+          activities: cachedActs,
+          user_profile: currentAthlete
+            ? {
+                name: currentAthlete.name,
+                age: currentAthlete.age,
+                weight_kg: currentAthlete.weightKg,
+                height_cm: currentAthlete.heightCm,
+                experience_level: currentAthlete.experienceLevel,
+                weekly_days_target: currentAthlete.weeklyDaysTarget,
+                weekly_hours_target: currentAthlete.weeklyHoursTarget,
+                known_max_hr: currentAthlete.knownMaxHr,
+                known_ftp: currentAthlete.knownFtp
+              }
+            : undefined
+        })
       });
       if (res.ok) {
         const data = await res.json();
@@ -111,13 +127,30 @@ export default function CoachPage() {
 
     try {
       const cachedActs = getCachedClientActivities();
+      const currentAthlete = getCurrentUser();
       const res = await fetch("/api/v1/coach/plan", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...getStravaAuthHeaders()
         },
-        body: JSON.stringify({ query: promptText, activities: cachedActs })
+        body: JSON.stringify({
+          query: promptText,
+          activities: cachedActs,
+          user_profile: currentAthlete
+            ? {
+                name: currentAthlete.name,
+                age: currentAthlete.age,
+                weight_kg: currentAthlete.weightKg,
+                height_cm: currentAthlete.heightCm,
+                experience_level: currentAthlete.experienceLevel,
+                weekly_days_target: currentAthlete.weeklyDaysTarget,
+                weekly_hours_target: currentAthlete.weeklyHoursTarget,
+                known_max_hr: currentAthlete.knownMaxHr,
+                known_ftp: currentAthlete.knownFtp
+              }
+            : undefined
+        })
       });
 
       if (res.ok) {

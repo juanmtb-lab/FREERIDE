@@ -342,7 +342,7 @@ export async function analyzeSingleActivityWithCoach(activity: StoredActivity): 
 export async function queryAiCoach(
   userQuery?: string,
   clientActivities?: StoredActivity[],
-  options?: { request?: Request; webhookUrlOverride?: string; userId?: string }
+  options?: { request?: Request; webhookUrlOverride?: string; userId?: string; userProfile?: any }
 ): Promise<CoachResponse> {
   const userId = options?.userId || options?.request?.headers?.get('x-user-id') || undefined;
   let activities = getStoredActivities(userId);
@@ -352,30 +352,47 @@ export async function queryAiCoach(
   const settings = getSettings();
   const metrics = calculateRiderFitnessMetrics(activities);
 
+  // Extract biometric & physiological questionnaire profile
+  let athleteProfile = options?.userProfile;
+  if (!athleteProfile && typeof window !== 'undefined') {
+    try {
+      const { getCurrentUser } = require('./auth');
+      athleteProfile = getCurrentUser();
+    } catch {}
+  }
+
+  const athleteName = athleteProfile?.name || 'Atleta';
+  const athleteAge = athleteProfile?.age || 35;
+  const athleteWeight = athleteProfile?.weightKg || 70;
+  const athleteHeight = athleteProfile?.heightCm || 175;
+  const athleteExp = athleteProfile?.experienceLevel || 'INTERMEDIO';
+  const athleteDaysTarget = athleteProfile?.weeklyDaysTarget || 4;
+  const athleteHoursTarget = athleteProfile?.weeklyHoursTarget || 6;
+  const athleteMaxHr = athleteProfile?.knownMaxHr || metrics.maxObservedHr || Math.round(208 - 0.7 * athleteAge);
+  const athleteFtp = athleteProfile?.knownFtp || (metrics.avgWattsLastRides ? Math.round(metrics.avgWattsLastRides * 1.15) : undefined);
+
   const headerWebhook = options?.request?.headers?.get('x-n8n-webhook-url');
   const webhookUrl = options?.webhookUrlOverride || headerWebhook || settings.n8n_webhook_url || process.env.N8N_WORKFLOW_WEBHOOK_URL;
 
   if (webhookUrl && webhookUrl.startsWith('http')) {
     try {
-      const athletePrompt = userQuery || 'Prescribe el entrenamiento recomendado según mi estado de forma reciente';
-      const quantifiedPrompt = `[INSTRUCCIONES TÉCNICAS OBLIGATORIAS:
-Responde de forma concisa y directa en viñetas estructuradas en español.
-Sin introducciones genéricas ni frases vacías como "disfruta del paisaje".
-Debes indicar con números exactos:
-• Diagnóstico de forma actual (evaluando CTL: ${metrics.ctl}, ATL: ${metrics.atl}, TSB: ${metrics.tsb}).
-• Distancia exacta en km y Desnivel positivo en +m.
-• Duración en minutos y Zona de intensidad (Z1, Z2, Z3, Z4 o Z5).
-• Pulsaciones reales en bpm (FC Máx real: ${metrics.maxObservedHr || 183} bpm) y Cadencia en rpm.
-• Estructura de la sesión en 3 fases: Calentamiento, Serie Principal y Enfriamiento.]
-
-Petición del Atleta: ${athletePrompt}`;
-
+      const athletePrompt = userQuery || 'Prescribe el entrenamiento recomendado según mi perfil y estado de forma actual';
       const payload = {
         event: 'COACH_ANALYSIS_REQUEST',
         timestamp: new Date().toISOString(),
-        response_format_instruction:
-          'Responde SIEMPRE en viñetas técnicas con distancias en km, desnivel en +m, duración en min, pulsaciones en bpm y cadencia en rpm. Cero rodeos.',
-        user_query: quantifiedPrompt,
+        user_query: athletePrompt,
+        athlete_profile: {
+          name: athleteName,
+          age: athleteAge,
+          weight_kg: athleteWeight,
+          height_cm: athleteHeight,
+          experience_level: athleteExp,
+          weekly_days_target: athleteDaysTarget,
+          weekly_hours_target: athleteHoursTarget,
+          max_hr_bpm: athleteMaxHr,
+          known_ftp_watts: athleteFtp || 'No determinado (estimar o guiar test)',
+          dominant_discipline: metrics.dominantDiscipline
+        },
         rider_metrics: metrics,
         recent_activities: activities.slice(0, 20).map(a => ({
           id: a.id,
