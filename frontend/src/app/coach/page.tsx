@@ -72,7 +72,13 @@ export default function CoachPage() {
                 weekly_days_target: currentAthlete.weeklyDaysTarget,
                 weekly_hours_target: currentAthlete.weeklyHoursTarget,
                 known_max_hr: currentAthlete.knownMaxHr,
-                known_ftp: currentAthlete.knownFtp
+                known_ftp: currentAthlete.knownFtp,
+                primary_discipline: currentAthlete.primaryDiscipline || "MTB",
+                has_power_meter: currentAthlete.hasPowerMeter ?? false,
+                has_heart_rate_monitor: currentAthlete.hasHeartRateMonitor ?? true,
+                heart_rate_sensor_type: currentAthlete.heartRateSensorType || "PECHO",
+                has_cadence_sensor: currentAthlete.hasCadenceSensor ?? true,
+                bike_computer: currentAthlete.bikeComputer || "GARMIN"
               }
             : undefined
         })
@@ -151,7 +157,13 @@ export default function CoachPage() {
                 weekly_days_target: currentAthlete.weeklyDaysTarget,
                 weekly_hours_target: currentAthlete.weeklyHoursTarget,
                 known_max_hr: currentAthlete.knownMaxHr,
-                known_ftp: currentAthlete.knownFtp
+                known_ftp: currentAthlete.knownFtp,
+                primary_discipline: currentAthlete.primaryDiscipline || "MTB",
+                has_power_meter: currentAthlete.hasPowerMeter ?? false,
+                has_heart_rate_monitor: currentAthlete.hasHeartRateMonitor ?? true,
+                heart_rate_sensor_type: currentAthlete.heartRateSensorType || "PECHO",
+                has_cadence_sensor: currentAthlete.hasCadenceSensor ?? true,
+                bike_computer: currentAthlete.bikeComputer || "GARMIN"
               }
             : undefined
         })

@@ -16,6 +16,14 @@ export interface UserProfile {
   knownMaxHr?: number;
   knownFtp?: number;
 
+  // Equipment & Bicycle Discipline profile
+  primaryDiscipline?: 'MTB' | 'CARRETERA' | 'GRAVEL' | 'MIXTO';
+  hasPowerMeter?: boolean;
+  hasHeartRateMonitor?: boolean;
+  heartRateSensorType?: 'PECHO' | 'RELOJ' | 'NINGUNO';
+  hasCadenceSensor?: boolean;
+  bikeComputer?: 'GARMIN' | 'WAHOO' | 'BRYTON' | 'HAMMERHEAD' | 'MOVIL' | 'NINGUNO' | 'OTRO';
+
   // Dedicated Strava & AI integration per user
   stravaAuth?: string;
   stravaAthleteName?: string;

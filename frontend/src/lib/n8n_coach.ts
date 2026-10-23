@@ -406,7 +406,13 @@ export async function queryAiCoach(
           weekly_hours_target: athleteHoursTarget,
           max_hr_bpm: athleteMaxHr,
           known_ftp_watts: athleteFtp || 'No determinado (estimar o guiar test)',
-          dominant_discipline: metrics.dominantDiscipline
+          dominant_discipline: athleteProfile?.primary_discipline || athleteProfile?.primaryDiscipline || metrics.dominantDiscipline,
+          primary_discipline: athleteProfile?.primary_discipline || athleteProfile?.primaryDiscipline || 'MTB',
+          has_power_meter: athleteProfile?.has_power_meter ?? athleteProfile?.hasPowerMeter ?? false,
+          has_heart_rate_monitor: athleteProfile?.has_heart_rate_monitor ?? athleteProfile?.hasHeartRateMonitor ?? true,
+          heart_rate_sensor_type: athleteProfile?.heart_rate_sensor_type || athleteProfile?.heartRateSensorType || 'PECHO',
+          has_cadence_sensor: athleteProfile?.has_cadence_sensor ?? athleteProfile?.hasCadenceSensor ?? true,
+          bike_computer: athleteProfile?.bike_computer || athleteProfile?.bikeComputer || 'GARMIN'
         },
         rider_metrics: metrics,
         recent_activities: activities.slice(0, 20).map(a => ({

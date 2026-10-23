@@ -242,7 +242,13 @@ export async function fetchActivityCoachInsight(activityId: string, activityData
         weekly_days_target: user.weeklyDaysTarget,
         weekly_hours_target: user.weeklyHoursTarget,
         max_hr_bpm: user.knownMaxHr,
-        known_ftp_watts: user.knownFtp
+        known_ftp_watts: user.knownFtp,
+        primary_discipline: user.primaryDiscipline || "MTB",
+        has_power_meter: user.hasPowerMeter ?? false,
+        has_heart_rate_monitor: user.hasHeartRateMonitor ?? true,
+        heart_rate_sensor_type: user.heartRateSensorType || "PECHO",
+        has_cadence_sensor: user.hasCadenceSensor ?? true,
+        bike_computer: user.bikeComputer || "GARMIN"
       } : undefined
     })
   });
