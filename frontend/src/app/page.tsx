@@ -10,7 +10,7 @@ import {
   purgeLegacyGarminCache,
   getStravaCacheKey
 } from "@/lib/api";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getAllUsers, setCurrentUser, getUserStorageKey } from "@/lib/auth";
 import { formatDistance, formatElevation, formatTime, formatSpeed } from "@/lib/utils";
 import {
   Bike,
@@ -129,16 +129,37 @@ export default function Dashboard() {
 
       if (code) {
         window.history.replaceState({}, "", window.location.pathname);
-        let cid = localStorage.getItem("freeride_strava_cid") || "";
-        let csec = localStorage.getItem("freeride_strava_csec") || "";
+        let cid = "";
+        let csec = "";
+        let targetUid: string | undefined;
 
         if (state) {
           try {
             const decoded = JSON.parse(atob(state));
             if (decoded.cid) cid = decoded.cid;
             if (decoded.csec) csec = decoded.csec;
+            if (decoded.uid) targetUid = decoded.uid;
           } catch {}
         }
+
+        let activeUser = getCurrentUser();
+        if (targetUid) {
+          const allUsers = getAllUsers();
+          const target = allUsers.find((u) => u.id === targetUid);
+          if (target) {
+            activeUser = target;
+            setCurrentUser(target);
+          }
+        }
+
+        if (!cid && activeUser) {
+          cid = activeUser.stravaClientId || localStorage.getItem(getUserStorageKey("freeride_strava_cid")) || "";
+        }
+        if (!csec && activeUser) {
+          csec = activeUser.stravaClientSecret || localStorage.getItem(getUserStorageKey("freeride_strava_csec")) || "";
+        }
+        if (!cid) cid = localStorage.getItem("freeride_strava_cid") || "";
+        if (!csec) csec = localStorage.getItem("freeride_strava_csec") || "";
 
         setSyncing(true);
         setLoading(true);
@@ -149,12 +170,14 @@ export default function Dashboard() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...getStravaAuthHeaders()
+            ...getStravaAuthHeaders(),
+            ...(activeUser?.id ? { "x-user-id": activeUser.id } : {})
           },
           body: JSON.stringify({
             code,
             client_id: cid || undefined,
-            client_secret: csec || undefined
+            client_secret: csec || undefined,
+            user_id: activeUser?.id || undefined
           })
         })
           .then(async (res) => {

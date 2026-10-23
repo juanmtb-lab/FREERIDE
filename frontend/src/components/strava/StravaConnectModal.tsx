@@ -20,6 +20,13 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [hostname, setHostname] = useState("localhost");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setHostname(window.location.hostname || "localhost");
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen && typeof window !== "undefined") {
@@ -96,13 +103,15 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...getStravaAuthHeaders()
+          ...getStravaAuthHeaders(),
+          ...(user?.id ? { "x-user-id": user.id } : {})
         },
         body: JSON.stringify({
           client_id: clientId.trim() || undefined,
           client_secret: clientSecret.trim() || undefined,
           access_token: accessToken.trim() || undefined,
-          refresh_token: refreshToken.trim() || undefined
+          refresh_token: refreshToken.trim() || undefined,
+          user_id: user?.id || undefined
         })
       });
 
@@ -155,9 +164,9 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
           </div>
         </div>
 
-        <div className="mb-4 p-3.5 rounded-2xl bg-dark-bg/80 border border-dark-border text-xs text-dark-muted space-y-1.5">
+        <div className="mb-4 p-3.5 rounded-2xl bg-dark-bg/80 border border-dark-border text-xs text-dark-muted space-y-2">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-white">¿Dónde copio mis datos de Strava?</span>
+            <span className="font-bold text-white">¿Cómo crear y copiar tus datos de Strava?</span>
             <a
               href="https://www.strava.com/settings/api"
               target="_blank"
@@ -169,9 +178,9 @@ export default function StravaConnectModal({ isOpen, onClose, onSuccess, initial
             </a>
           </div>
           <p className="text-[11px] leading-relaxed">
-            1. Entra en <strong className="text-white">strava.com/settings/api</strong>.<br />
-            2. Copia tu <strong className="text-white">ID de cliente (Client ID)</strong> y pulsa <strong className="text-white">&quot;Mostrar&quot;</strong> en <strong className="text-white">Secreto del cliente (Client Secret)</strong> para copiarlo.<br />
-            3. Pulsa el botón morado <strong className="text-purple-400">&quot;Autorizar con Strava en 1 Clic&quot;</strong> para importar todas tus actividades anteriores.
+            1. En <strong className="text-white">strava.com/settings/api</strong>, si creas tu app, en <strong className="text-purple-300">&quot;Authorization Callback Domain&quot;</strong> pon exactamente: <code className="bg-purple-950/60 border border-purple-500/40 text-purple-200 px-1.5 py-0.5 rounded font-mono font-bold">{hostname}</code> <span className="text-dark-muted text-[10px]">(sin http://, ni puertos :3000, ni barras)</span>.<br />
+            2. Copia tu <strong className="text-white">ID de cliente (Client ID)</strong> y pulsa <strong className="text-white">&quot;Mostrar&quot;</strong> en <strong className="text-white">Secreto del cliente (Client Secret)</strong>.<br />
+            3. Pulsa el botón morado <strong className="text-purple-400">&quot;Autorizar con Strava en 1 Clic&quot;</strong> para sincronizar todo tu historial.
           </p>
         </div>
 

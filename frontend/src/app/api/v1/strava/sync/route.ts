@@ -11,14 +11,12 @@ export const revalidate = 0;
 
 export async function POST(request: Request) {
   try {
-    const userId = request.headers.get('x-user-id') || undefined;
-    const isOwner = !userId || userId === 'principal' || userId === 'usr_jmtb' || userId === 'default';
-
     let clientId: string | undefined;
     let clientSecret: string | undefined;
     let accessToken: string | undefined;
     let refreshToken: string | undefined;
     let oauthCode: string | undefined;
+    let explicitUserId: string | undefined;
 
     try {
       const body = await request.json();
@@ -28,10 +26,14 @@ export async function POST(request: Request) {
         accessToken = body.access_token?.trim();
         refreshToken = body.refresh_token?.trim();
         oauthCode = body.code?.trim();
+        explicitUserId = body.user_id?.trim();
       }
     } catch {}
 
-    const existing = getStravaSession(request);
+    const userId = explicitUserId || request.headers.get('x-user-id') || undefined;
+    const isOwner = !userId || userId === 'principal' || userId === 'usr_jmtb' || userId === 'default';
+
+    const existing = getStravaSession(request, userId);
     if (!clientId) clientId = existing?.clientId || (isOwner ? process.env.STRAVA_CLIENT_ID : undefined);
     if (!clientSecret) clientSecret = existing?.clientSecret || (isOwner ? process.env.STRAVA_CLIENT_SECRET : undefined);
     if (!accessToken) accessToken = existing?.accessToken || (isOwner ? process.env.STRAVA_ACCESS_TOKEN : undefined);

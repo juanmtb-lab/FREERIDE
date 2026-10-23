@@ -10,9 +10,10 @@ const STRAVA_API = 'https://www.strava.com/api/v3';
 
 async function stravaFetchWithAuth(
   url: string,
-  session: StravaSessionData
+  session: StravaSessionData,
+  userId?: string
 ): Promise<{ res: Response; session: StravaSessionData }> {
-  let activeSession = await refreshStravaTokenIfNeeded(session, false);
+  let activeSession = await refreshStravaTokenIfNeeded(session, false, userId);
 
   let res = await fetch(url, {
     headers: {
@@ -23,7 +24,7 @@ async function stravaFetchWithAuth(
 
   // If 401 Unauthorized and we have refresh credentials, force a token refresh once
   if (res.status === 401 && activeSession.refreshToken && activeSession.clientId && activeSession.clientSecret) {
-    activeSession = await refreshStravaTokenIfNeeded(activeSession, true);
+    activeSession = await refreshStravaTokenIfNeeded(activeSession, true, userId);
     res = await fetch(url, {
       headers: {
         Authorization: `Bearer ${activeSession.accessToken}`
@@ -48,7 +49,7 @@ export async function syncStravaActivitiesLive(options?: {
   session: StravaSessionData | null;
 }> {
   const userId = options?.userId || options?.request?.headers?.get('x-user-id') || undefined;
-  let session = getStravaSession(options?.request);
+  let session = getStravaSession(options?.request, userId);
 
   if (options?.accessToken || options?.refreshToken || options?.clientId || options?.clientSecret) {
     session = saveStravaSession({
@@ -68,13 +69,14 @@ export async function syncStravaActivitiesLive(options?: {
   }
 
   // If user provided clientId + clientSecret + refreshToken without accessToken, refresh immediately
-  session = await refreshStravaTokenIfNeeded(session, !session.accessToken);
+  session = await refreshStravaTokenIfNeeded(session, !session.accessToken, userId);
 
   // 1. Fetch Athlete Profile to verify token and get athlete name
   try {
     const { res: athleteRes, session: updatedSession } = await stravaFetchWithAuth(
       `${STRAVA_API}/athlete`,
-      session
+      session,
+      userId
     );
     session = updatedSession;
     if (athleteRes.ok) {
@@ -96,7 +98,8 @@ export async function syncStravaActivitiesLive(options?: {
   for (let page = 1; page <= 3; page++) {
     const { res, session: updatedSession } = await stravaFetchWithAuth(
       `${STRAVA_API}/athlete/activities?per_page=200&page=${page}`,
-      session
+      session,
+      userId
     );
     session = updatedSession;
 

@@ -24,12 +24,13 @@ export interface StravaSessionData {
 }
 
 export function saveStravaSession(partial: Partial<StravaSessionData>, userId?: string): StravaSessionData {
-  const current = getStravaSession();
+  const isOwner = !userId || userId === 'principal' || userId === 'usr_jmtb' || userId === 'default';
+  const current = getStravaSession(undefined, userId);
   const data: StravaSessionData = {
-    clientId: partial.clientId ?? current?.clientId ?? process.env.STRAVA_CLIENT_ID,
-    clientSecret: partial.clientSecret ?? current?.clientSecret ?? process.env.STRAVA_CLIENT_SECRET,
-    accessToken: partial.accessToken ?? current?.accessToken ?? process.env.STRAVA_ACCESS_TOKEN ?? '',
-    refreshToken: partial.refreshToken ?? current?.refreshToken ?? process.env.STRAVA_REFRESH_TOKEN,
+    clientId: partial.clientId ?? current?.clientId ?? (isOwner ? process.env.STRAVA_CLIENT_ID : undefined),
+    clientSecret: partial.clientSecret ?? current?.clientSecret ?? (isOwner ? process.env.STRAVA_CLIENT_SECRET : undefined),
+    accessToken: partial.accessToken ?? current?.accessToken ?? (isOwner ? process.env.STRAVA_ACCESS_TOKEN : undefined) ?? '',
+    refreshToken: partial.refreshToken ?? current?.refreshToken ?? (isOwner ? process.env.STRAVA_REFRESH_TOKEN : undefined),
     expiresAt: partial.expiresAt ?? current?.expiresAt,
     athleteName: partial.athleteName ?? current?.athleteName,
     athleteId: partial.athleteId ?? current?.athleteId,
@@ -46,8 +47,8 @@ export function saveStravaSession(partial: Partial<StravaSessionData>, userId?: 
   return data;
 }
 
-export function getStravaSession(request?: Request): StravaSessionData | null {
-  const userId = request?.headers?.get('x-user-id') || undefined;
+export function getStravaSession(request?: Request, explicitUserId?: string): StravaSessionData | null {
+  const userId = explicitUserId || request?.headers?.get('x-user-id') || undefined;
   const isOwner = !userId || userId === 'principal' || userId === 'usr_jmtb' || userId === 'default';
 
   // 1. Hydrate from client header (solves Vercel serverless cold starts)
@@ -114,8 +115,10 @@ export function getStravaSession(request?: Request): StravaSessionData | null {
 
 export async function refreshStravaTokenIfNeeded(
   session: StravaSessionData,
-  forceRefresh = false
+  forceRefresh = false,
+  userId?: string
 ): Promise<StravaSessionData> {
+  const isOwner = !userId || userId === 'principal' || userId === 'usr_jmtb' || userId === 'default';
   const nowSec = Math.floor(Date.now() / 1000);
   const isExpired =
     forceRefresh ||
@@ -126,9 +129,9 @@ export async function refreshStravaTokenIfNeeded(
     return session;
   }
 
-  const clientId = session.clientId || process.env.STRAVA_CLIENT_ID;
-  const clientSecret = session.clientSecret || process.env.STRAVA_CLIENT_SECRET;
-  const refreshToken = session.refreshToken || process.env.STRAVA_REFRESH_TOKEN;
+  const clientId = session.clientId || (isOwner ? process.env.STRAVA_CLIENT_ID : undefined);
+  const clientSecret = session.clientSecret || (isOwner ? process.env.STRAVA_CLIENT_SECRET : undefined);
+  const refreshToken = session.refreshToken || (isOwner ? process.env.STRAVA_REFRESH_TOKEN : undefined);
 
   if (!clientId || !clientSecret || !refreshToken) {
     return session;
@@ -161,7 +164,7 @@ export async function refreshStravaTokenIfNeeded(
     expiresAt: tokenData.expires_at,
     athleteName: session.athleteName,
     athleteId: session.athleteId
-  });
+  }, userId);
 }
 
 export async function exchangeStravaCodeForToken(
