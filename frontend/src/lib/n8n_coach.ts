@@ -255,9 +255,18 @@ export function calculateRiderFitnessMetrics(activities: StoredActivity[]): Ride
   };
 }
 
-export async function analyzeSingleActivityWithCoach(activity: StoredActivity): Promise<AIInsight> {
+export async function analyzeSingleActivityWithCoach(
+  activity: StoredActivity,
+  options?: {
+    webhookUrlOverride?: string;
+    request?: Request;
+    athleteProfile?: any;
+    riderMetrics?: any;
+  }
+): Promise<AIInsight> {
   const settings = getSettings();
-  const webhookUrl = settings.n8n_webhook_url || process.env.N8N_WORKFLOW_WEBHOOK_URL;
+  const headerWebhook = options?.request?.headers?.get('x-n8n-webhook-url');
+  const webhookUrl = options?.webhookUrlOverride || headerWebhook || settings.n8n_webhook_url || process.env.N8N_WORKFLOW_WEBHOOK_URL;
 
   const distKm = (activity.total_distance_m / 1000).toFixed(2);
   const durMin = Math.round(activity.moving_time_sec / 60);
@@ -270,9 +279,9 @@ export async function analyzeSingleActivityWithCoach(activity: StoredActivity): 
     try {
       const payload = {
         event: 'SINGLE_ACTIVITY_ANALYSIS',
+        action_type: 'ANALYZE_ACTIVITY',
         timestamp: new Date().toISOString(),
-        response_format_instruction:
-          'Responde SIEMPRE en español en máximo 4 líneas cortas con viñetas. Directo al grano: métricas clave y pauta concreta para mañana.',
+        user_query: `Analiza esta ruta realizada: '${activity.title}' (${distKm} km, +${activity.elevation_gain_m}m). Evalúa mi esfuerzo, FC y zonas de intensidad, saca conclusiones fisiológicas y dame pautas de recuperación y nutrición.`,
         activity: {
           id: activity.id,
           title: activity.title,
@@ -287,7 +296,9 @@ export async function analyzeSingleActivityWithCoach(activity: StoredActivity): 
           max_hr: activity.max_hr,
           avg_cadence: activity.avg_cadence,
           hr_zones: z
-        }
+        },
+        athlete_profile: options?.athleteProfile,
+        rider_metrics: options?.riderMetrics
       };
 
       const res = await fetch(webhookUrl, {

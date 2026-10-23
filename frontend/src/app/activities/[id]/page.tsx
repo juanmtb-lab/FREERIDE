@@ -11,6 +11,7 @@ import {
 } from "@/lib/api";
 import { formatDistance, formatElevation, formatTime, formatSpeed, formatWatts } from "@/lib/utils";
 import TelemetryCharts from "@/components/charts/TelemetryCharts";
+import CoachMessageRenderer from "@/components/coach/CoachMessageRenderer";
 import {
   Activity as HRIcon,
   BrainCircuit,
@@ -246,25 +247,25 @@ export default function ActivityDetailPage() {
       </div>
 
       {/* Spanish AI Coach Insight Box */}
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-orange-500/30 space-y-6">
+      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-purple-500/30 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-xl font-bold text-white flex items-center space-x-3">
-            <BrainCircuit className="w-6 h-6 text-orange-400" />
+            <BrainCircuit className="w-6 h-6 text-purple-400" />
             <span>Análisis Fisiológico Entrenador AI FREERIDE</span>
           </h2>
 
           <button
             onClick={handleGenerateInsight}
             disabled={loadingInsight}
-            className="px-4 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-xs rounded-xl transition shadow-md shadow-orange-500/20 disabled:opacity-50"
+            className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl transition shadow-md shadow-purple-600/20 disabled:opacity-50"
           >
             {loadingInsight ? "Analizando telemetría real..." : "Generar Análisis AI"}
           </button>
         </div>
 
         {insight ? (
-          <div className="prose prose-invert max-w-none text-sm text-dark-text leading-relaxed whitespace-pre-line bg-dark-bg/60 p-6 rounded-2xl border border-dark-border">
-            {insight.content_es}
+          <div className="bg-dark-bg/60 p-5 sm:p-6 rounded-2xl border border-purple-500/20">
+            <CoachMessageRenderer content={insight.content_es} />
           </div>
         ) : (
           <div className="text-center py-6 text-dark-muted text-xs">

@@ -16,12 +16,13 @@ export interface UserProfile {
   knownMaxHr?: number;
   knownFtp?: number;
 
-  // Dedicated Strava integration per user
+  // Dedicated Strava & AI integration per user
   stravaAuth?: string;
   stravaAthleteName?: string;
   stravaAthleteId?: string;
   stravaClientId?: string;
   stravaClientSecret?: string;
+  n8nWebhookUrl?: string;
 }
 
 export interface AuthSession {

@@ -218,13 +218,33 @@ export async function uploadActivityFile(file: File, title?: string, description
 }
 
 export async function fetchActivityCoachInsight(activityId: string, activityData?: ActivityDetail): Promise<AIInsight> {
+  const user = getCurrentUser();
+  const n8nWebhook = typeof window !== "undefined"
+    ? localStorage.getItem("freeride_n8n_webhook") || user?.n8nWebhookUrl
+    : undefined;
+
   const res = await fetch(`${API_BASE}/coach/analyze/${activityId}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...getStravaAuthHeaders()
+      ...getStravaAuthHeaders(),
+      ...(n8nWebhook ? { "x-n8n-webhook-url": n8nWebhook } : {})
     },
-    body: JSON.stringify({ activity: activityData })
+    body: JSON.stringify({
+      activity: activityData,
+      webhook_url: n8nWebhook || undefined,
+      athlete_profile: user ? {
+        name: user.name,
+        age: user.age,
+        weight_kg: user.weightKg,
+        height_cm: user.heightCm,
+        experience_level: user.experienceLevel,
+        weekly_days_target: user.weeklyDaysTarget,
+        weekly_hours_target: user.weeklyHoursTarget,
+        max_hr_bpm: user.knownMaxHr,
+        known_ftp_watts: user.knownFtp
+      } : undefined
+    })
   });
   if (!res.ok) {
     throw new Error("Error al generar análisis del entrenador");

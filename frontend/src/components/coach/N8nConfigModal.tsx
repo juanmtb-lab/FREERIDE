@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Workflow, CheckCircle2, Save, Link2 } from "lucide-react";
+import { X, Workflow, CheckCircle2, Save, Link2, Sparkles, ShieldCheck } from "lucide-react";
+import { getCurrentUser, saveUser } from "@/lib/auth";
 
 interface N8nConfigModalProps {
   isOpen: boolean;
@@ -17,7 +18,8 @@ export default function N8nConfigModal({ isOpen, onClose, onSaved }: N8nConfigMo
   useEffect(() => {
     if (isOpen) {
       if (typeof window !== "undefined") {
-        const local = localStorage.getItem("freeride_n8n_webhook");
+        const user = getCurrentUser();
+        const local = localStorage.getItem("freeride_n8n_webhook") || user?.n8nWebhookUrl;
         if (local) setWebhookUrl(local);
       }
       fetch("/api/v1/settings")
@@ -46,6 +48,11 @@ export default function N8nConfigModal({ isOpen, onClose, onSaved }: N8nConfigMo
           localStorage.setItem("freeride_n8n_webhook", cleanUrl);
         } else {
           localStorage.removeItem("freeride_n8n_webhook");
+        }
+        const user = getCurrentUser();
+        if (user) {
+          user.n8nWebhookUrl = cleanUrl || undefined;
+          saveUser(user);
         }
       }
       await fetch("/api/v1/settings", {

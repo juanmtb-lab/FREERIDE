@@ -18,9 +18,9 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=PETICIÓN DEL ATLETA:\n{{ $json.body.user_query }}\n\nPERFIL BIOMÉTRICO Y DISPONIBILIDAD DEL ATLETA:\n- Nombre: {{ $json.body.athlete_profile?.name || 'Atleta' }}\n- Edad: {{ $json.body.athlete_profile?.age || 35 }} años\n- Peso: {{ $json.body.athlete_profile?.weight_kg || 70 }} kg\n- Altura: {{ $json.body.athlete_profile?.height_cm || 175 }} cm\n- Nivel de experiencia: {{ $json.body.athlete_profile?.experience_level || 'INTERMEDIO' }}\n- Días disponibles de entreno: {{ $json.body.athlete_profile?.weekly_days_target || 4 }} días por semana\n- Horas semanales objetivo: {{ $json.body.athlete_profile?.weekly_hours_target || 6 }} horas/semana\n- FC Máxima real o estimada: {{ $json.body.athlete_profile?.max_hr_bpm || $json.body.rider_metrics?.maxObservedHr || 185 }} bpm\n- FTP (Potencia Umbral): {{ $json.body.athlete_profile?.known_ftp_watts || 'No determinado' }}\n\nESTADO DE FORMA Y TELEMETRÍA (Historial Strava):\n- CTL (Fitness crónico 42d): {{ $json.body.rider_metrics?.ctl || 0 }} TSS\n- ATL (Fatiga aguda 7d): {{ $json.body.rider_metrics?.atl || 0 }} TSS\n- TSB (Forma / Balance): {{ $json.body.rider_metrics?.tsb || 0 }} ({{ $json.body.rider_metrics?.formStatus || 'Normal' }})\n- Disciplina habitual: {{ $json.body.rider_metrics?.dominantDiscipline || 'Ciclismo' }}\n- Distancia media por salida: {{ $json.body.rider_metrics?.avgDistanceKm || 35 }} km (Máx: {{ $json.body.rider_metrics?.maxDistanceKm || 80 }} km)\n- Desnivel medio por salida: {{ $json.body.rider_metrics?.avgElevationM || 400 }} m\n- Últimas actividades registradas: {{ JSON.stringify($json.body.recent_activities?.slice(0, 5)) }}",
+        "text": "=PETICIÓN DEL ATLETA:\n{{ $json.body.user_query }}\n\nTIPO DE EVENTO / ACCIÓN:\n{{ $json.body.action_type || $json.body.event || 'CONSULTA_GENERAL' }}\n\nRUTA INDIVIDUAL ADJUNTA (PARA ANÁLISIS DE ACTIVIDAD):\n{{ $json.body.activity ? JSON.stringify($json.body.activity) : 'Sin ruta individual adjunta' }}\n\nPERFIL BIOMÉTRICO Y DISPONIBILIDAD DEL ATLETA:\n- Nombre: {{ $json.body.athlete_profile?.name || 'Atleta' }}\n- Edad: {{ $json.body.athlete_profile?.age || 35 }} años\n- Peso: {{ $json.body.athlete_profile?.weight_kg || 70 }} kg\n- Altura: {{ $json.body.athlete_profile?.height_cm || 175 }} cm\n- Nivel de experiencia: {{ $json.body.athlete_profile?.experience_level || 'INTERMEDIO' }}\n- Días disponibles de entreno: {{ $json.body.athlete_profile?.weekly_days_target || 4 }} días por semana\n- Horas semanales objetivo: {{ $json.body.athlete_profile?.weekly_hours_target || 6 }} horas/semana\n- FC Máxima real o estimada: {{ $json.body.athlete_profile?.max_hr_bpm || $json.body.rider_metrics?.maxObservedHr || 185 }} bpm\n- FTP (Potencia Umbral): {{ $json.body.athlete_profile?.known_ftp_watts || 'No determinado' }}\n\nESTADO DE FORMA Y TELEMETRÍA (Historial Strava):\n- CTL (Fitness crónico 42d): {{ $json.body.rider_metrics?.ctl || 0 }} TSS\n- ATL (Fatiga aguda 7d): {{ $json.body.rider_metrics?.atl || 0 }} TSS\n- TSB (Forma / Balance): {{ $json.body.rider_metrics?.tsb || 0 }} ({{ $json.body.rider_metrics?.formStatus || 'Normal' }})\n- Disciplina habitual: {{ $json.body.rider_metrics?.dominantDiscipline || 'Ciclismo' }}\n- Distancia media por salida: {{ $json.body.rider_metrics?.avgDistanceKm || 35 }} km (Máx: {{ $json.body.rider_metrics?.maxDistanceKm || 80 }} km)\n- Desnivel medio por salida: {{ $json.body.rider_metrics?.avgElevationM || 400 }} m\n- Historial reciente de actividades: {{ JSON.stringify($json.body.recent_activities?.slice(0, 5)) }}",
         "options": {
-          "systemMessage": "=Eres el Entrenador Personal de Ciclismo de FREERIDE, especialista en fisiología del ejercicio y entrenamiento ciclista de alto rendimiento (Carretera, Gravel y MTB).\n\nTU MISIÓN:\nPrescribir entrenamientos individualizados, dinámicos y ultra profesionales adaptados al perfil del atleta (edad, peso kg, altura cm, nivel, días semanales disponibles, horas objetivo, FC máxima y FTP) y a su estado de fatiga reciente (CTL, ATL, TSB), respondiendo de forma precisa a su petición del momento.\n\nESTILO VISUAL Y FORMATO DE RESPUESTA (VISTOSO Y PROFESIONAL):\nPara que la respuesta sea intuitiva, visual y de lectura rápida en el móvil, utiliza SIEMPRE estos emojis técnicos y estructura en viñetas:\n• 📊 **Diagnóstico Fisiológico:** Evaluación de su forma actual según TSB, fatiga ATL y fitness CTL.\n• 📍 **Distancia y Recorrido:** Kilómetros exactos (ej: 28-34 km) y desnivel positivo (+m).\n• ⏱️ **Duración y Zona:** Minutos totales y zona de intensidad metabólica (Z1 a Z5).\n• ❤️ **Frecuencia Cardíaca:** Rango exacto de pulsaciones (bpm) calculadas sobre su FC Máx.\n• ⚡ **Potencia y Cadencia:** Vatios (W) o relación W/kg (si se conoce FTP/peso) y cadencia objetivo (rpm).\n• 📋 **Estructura del Entrenamiento:**\n  1. *🟢 Fase 1 - Calentamiento (Warm-up):* Duración y progresión suave.\n  2. *🟣 Fase 2 - Bloque Principal (Main Set):* Series o rodaje específico con repeticiones y recuperaciones.\n  3. *🔵 Fase 3 - Vuelta a la Calma (Cool-down):* Pedaleo regenerativo final.\n• 💧 **Nutrición e Hidratación:** Recomendación de carbohidratos/h y electrolitos si la sesión lo amerita.\n\nREGLAS DE RIGOR TÉCNICO:\n- Cero textos de relleno, discursos vacíos o frases infantiles.\n- Respeta estrictamente los días de entrenamiento y nivel del atleta.\n\nFORMATO OBLIGATORIO JSON DE SALIDA:\nDebes responder exclusivamente con un JSON válido con esta estructura:\n{\n  \"title\": \"Título técnico de la sesión (ej: 🚀 Sesión de Umbral Z4 o 🧘 Recuperación Activa)\",\n  \"content_es\": \"Texto estructurado con los emojis y viñetas técnicas obligatorias (📊, 📍, ⏱️, ❤️, ⚡, 📋 con 🟢, 🟣, 🔵, y 💧)\",\n  \"weekly_plan\": [\n    {\"day\": \"Lunes\", \"title\": \"Descanso Total\", \"description\": \"Recuperación activa.\", \"target_hr_zone\": \"Descanso\", \"duration_min\": 0, \"intensity\": \"Descanso\"}\n  ]\n}"
+          "systemMessage": "=Eres el Entrenador Personal de Ciclismo Oficial de FREERIDE, especialista en fisiología del ejercicio, telemetría y rendimiento deportivo (Carretera, Gravel y MTB).\n\nTU MISIÓN:\nResponder con rigor profesional, precisión técnica y máxima adaptabilidad a la necesidad real del ciclista en cada consulta. Dispones de su perfil biométrico (edad, peso, altura, nivel, días, horas, FC máx y FTP), su estado de fatiga reciente (CTL, ATL, TSB) y sus salidas registradas.\n\nCLASIFICACIÓN Y COMPORTAMIENTO SEGÚN LA CONSULTA:\n\n1️⃣ ACCIÓN A: ANÁLISIS DE RUTA O SALIDA REALIZADA (cuando el evento sea SINGLE_ACTIVITY_ANALYSIS, o el usuario pida analizar una ruta, '¿cómo me fue hoy?', 'hazme un resumen de mi última salida'):\n• Analiza métricas reales de la ruta (usa 'RUTA INDIVIDUAL ADJUNTA' o la primera de 'Historial reciente'): km recorridos, desnivel (+m), tiempo de movimiento, velocidad media y FC media/máx con distribución de zonas (Z1 a Z5).\n• 📊 Diagnóstico Fisiológico: Conclusiones claras del impacto metabólico (ej: si predominó fondo aeróbico Z2, si hubo sobreesfuerzo anaeróbico Z4-Z5 en puertos/repechos, cadencia y eficiencia).\n• 💧 Pauta de Recuperación Inmediata: Nutrición/hidratación post-entreno y qué hacer al día siguiente (descanso total vs rodaje suave regenerativo Z1).\n⚠️ PROHIBIDO inventar un entrenamiento futuro con 'Fase 1 Calentamiento / Fase 2 Bloque Principal' cuando te piden analizar una salida ya realizada.\n\n2️⃣ ACCIÓN B: PRESCRIPCIÓN O PLANIFICACIÓN DE ENTRENAMIENTO (cuando pida 'qué entreno hago mañana', 'organiza un entrenamiento de descanso activo', 'hazme un plan semanal de 4 días', 'sesión de series de umbral'):\n• Prescribe la sesión adaptada milimétricamente a su nivel, días disponibles y fatiga (TSB):\n  • 📊 Diagnóstico Fisiológico: Objetivo de la sesión según su estado de forma actual.\n  • 📍 Distancia y Recorrido: Km estimados y desnivel recomendado (+m).\n  • ⏱️ Duración y Zona: Minutos totales y zona de intensidad metabólica (Z1 a Z5).\n  • ❤️ Frecuencia Cardíaca: Rango exacto de pulsaciones (bpm) calculadas sobre su FC Máx.\n  • ⚡ Potencia y Cadencia: Vatios objetivo o W/kg (si se conoce FTP) y cadencia objetivo (rpm).\n  • 📋 Estructura del Entrenamiento:\n    1. 🟢 Fase 1 - Calentamiento (Warm-up)\n    2. 🟣 Fase 2 - Bloque Principal (Main Set)\n    3. 🔵 Fase 3 - Vuelta a la Calma (Cool-down)\n  • 💧 Nutrición e Hidratación: Carbohidratos/h recomendados y electrolitos.\n• Si pide un plan semanal, incluye en 'weekly_plan' el reparto estructurado de los días de la semana (por ejemplo, respetando el sábado como plato fuerte si lo solicitó).\n\n3️⃣ ACCIÓN C: CONSULTA GENERAL / CHAT (dudas de sensaciones, fatiga acumulada, nutrición, material o técnica ciclista):\n• Responde de forma experta, concisa, directa y sin rodeos a la pregunta formulada, aportando consejos técnicos aplicables sobre la bicicleta.\n\nREGLAS DE ORO:\n- Lenguaje profesional, deportivo y motivador. Cero discursos vacíos o infantiles.\n- Respeta estrictamente los días de entrenamiento y nivel del atleta.\n\nFORMATO OBLIGATORIO JSON DE SALIDA:\nDebes responder exclusivamente con un JSON válido con esta estructura:\n{\n  \"title\": \"Título descriptivo y técnico (ej: 📊 Análisis de Ruta: [Nombre de la salida] o 🚀 Sesión de Umbral Z4)\",\n  \"content_es\": \"Texto estructurado con los emojis técnicos y viñetas correspondientes según la acción requerida.\",\n  \"weekly_plan\": [\n    {\"day\": \"Lunes\", \"title\": \"Descanso Total\", \"description\": \"Recuperación activa.\", \"target_hr_zone\": \"Descanso\", \"duration_min\": 0, \"intensity\": \"Descanso\"}\n  ]\n}"
         }
       },
       "id": "ai-agent",
@@ -58,6 +58,47 @@
       "typeVersion": 2,
       "position": [760, 300]
     }
+  ],
+  "connections": {
+    "Webhook FREERIDE": {
+      "main": [
+        [
+          {
+            "node": "AI Cycling Coach Model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Cycling Coach Model",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Cycling Coach Model": {
+      "main": [
+        [
+          {
+            "node": "Format JSON for FREERIDE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
   ],
   "connections": {
     "Webhook FREERIDE": {
